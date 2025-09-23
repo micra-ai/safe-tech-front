@@ -11,6 +11,7 @@ import Timelapse from "./components/Timelapse";
 import ReportesAlertas from "./components/ReportesAlertas";
 import Login from "./components/Login";
 import Usuarios from "./components/Usuarios";
+import Camaras from "./components/Camaras";   // ✅ importaste el nuevo componente
 
 /* ---------- Vistas ---------- */
 function Inicio() {
@@ -79,7 +80,6 @@ function App() {
     <div className="flex min-h-screen bg-gray-100">
       {user && <Sidebar user={user} onLogout={() => setUser(null)} />}
 
-
       <main className="flex-1 flex flex-col gap-6 p-6 bg-gray-50 md:ml-64">
         {user && <Header user={user} />}
 
@@ -112,6 +112,12 @@ function App() {
             element={user ? <ReportesView /> : <Navigate to="/login" replace />}
           />
 
+          {/* ✅ Nueva ruta protegida para Cámaras */}
+          <Route
+            path="/camaras"
+            element={user ? <Camaras /> : <Navigate to="/login" replace />}
+          />
+
           {/* Solo admin */}
           <Route
             path="/usuarios"
@@ -126,9 +132,9 @@ function App() {
 
           {/* Login público */}
           <Route
-  path="/login"
-  element={<Login onLogin={setUser} />}
-/>
+            path="/login"
+            element={<Login onLogin={setUser} />}
+          />
 
           {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />

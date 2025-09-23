@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { FaHome, FaBell, FaFileAlt, FaVideo, FaUsers, FaSignOutAlt } from "react-icons/fa";
+import { FaHome, FaBell, FaFileAlt, FaVideo, FaUsers, FaSignOutAlt, FaCamera } from "react-icons/fa"; 
 import { logoutUser } from "../api";
 
 export default function Sidebar({ user, onLogout }) {
@@ -21,6 +21,7 @@ export default function Sidebar({ user, onLogout }) {
     { to: "/alertas", label: "Alertas", icon: <FaBell /> },
     { to: "/reportes", label: "Reportes", icon: <FaFileAlt /> },
     { to: "/timelapse", label: "Timelapse", icon: <FaVideo /> },
+    { to: "/camaras", label: "Cámaras", icon: <FaCamera /> },  // ✅ nuevo item
   ];
 
   if (user?.rol === "admin") {
@@ -30,15 +31,14 @@ export default function Sidebar({ user, onLogout }) {
   return (
     <div className="bg-[#0d1b2a] text-white w-64 flex flex-col justify-between p-5 fixed h-full shadow-xl">
       {/* Logo */}
-      {/* Logo */}
-<div className="flex items-center justify-center mb-8">
-  <div className="bg-white rounded-lg p-3 shadow-md">
-    <img
-      src="/Logo_Syncore_Horizontal_color.png"
-      alt="Logo"
-      className="w-40"
-    />
-  </div>
+      <div className="flex items-center justify-center mb-8">
+        <div className="bg-white rounded-lg p-3 shadow-md">
+          <img
+            src="/Logo_Syncore_Horizontal_color.png"
+            alt="Logo"
+            className="w-40"
+          />
+        </div>
       </div>
 
       {/* Menú */}
@@ -61,7 +61,7 @@ export default function Sidebar({ user, onLogout }) {
       {/* Footer con usuario */}
       <div className="mt-6 border-t border-gray-700 pt-4">
         <div className="flex items-center gap-3 mb-4">
-          {/* Avatar inicial con circulo */}
+          {/* Avatar inicial con círculo */}
           <div className="w-10 h-10 rounded-full bg-[#1c3b6c] flex items-center justify-center font-bold uppercase">
             {user?.nombre?.[0] || "U"}
           </div>
