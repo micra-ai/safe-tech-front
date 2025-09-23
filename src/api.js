@@ -75,15 +75,24 @@ export const registerUser = (data) =>
   fetchJSON("/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      nombre: data.nombre,
+      correo: data.correo,
+      password: data.password,
+    }),
   });
+
 
 export const loginUser = (data) =>
   fetchJSON("/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      correo: data.correo,
+      password: data.password,
+    }),
   });
+
 
 export const getCurrentUser = () => fetchJSON("/auth/me");
 
