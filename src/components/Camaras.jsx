@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import Hls from "hls.js";
 
-// ⚠️ Ponemos la IP local del PC faena
-const API_URL_STREAM = "http://192.168.1.34:5000";
+// ⚠️ Usamos la URL pública de ngrok en vez de la IP local
+const API_URL_STREAM = "https://07489a802c68.ngrok-free.app";
 
 export default function Camaras() {
   const camaras = [
