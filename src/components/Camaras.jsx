@@ -1,8 +1,30 @@
 import { useEffect, useRef } from "react";
 import Hls from "hls.js";
+import { abs } from "../api";
 
-// ⚠️ Usamos la URL pública de ngrok en vez de la IP local
-const API_URL_STREAM = "https://07489a802c68.ngrok-free.app";
+function VideoPlayer({ channel, title }) {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    const url = `${API_URL}/stream/${channel}/index.m3u8`;
+
+    if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(url);
+      hls.attachMedia(video);
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = url;
+    }
+  }, [channel]);
+
+  return (
+    <div className="bg-gray-900 rounded-lg overflow-hidden shadow">
+      <div className="px-4 py-2 font-bold text-white bg-gray-800">{title}</div>
+      <video ref={videoRef} controls autoPlay muted className="w-full h-64" />
+    </div>
+  );
+}
 
 export default function Camaras() {
   const camaras = [
@@ -17,42 +39,9 @@ export default function Camaras() {
       <h2 className="text-2xl font-bold mb-6">Cámaras en vivo</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {camaras.map((cam) => (
-          <VideoPlayer
-            key={cam.id}
-            url={`${API_URL_STREAM}/stream/${cam.id}/index.m3u8`}
-            title={cam.title}
-          />
+          <VideoPlayer key={cam.id} channel={cam.id} title={cam.title} />
         ))}
       </div>
-    </div>
-  );
-}
-
-function VideoPlayer({ url, title }) {
-  const videoRef = useRef(null);
-
-  useEffect(() => {
-    if (Hls.isSupported()) {
-      const hls = new Hls();
-      hls.loadSource(url);
-      hls.attachMedia(videoRef.current);
-    } else if (videoRef.current.canPlayType("application/vnd.apple.mpegurl")) {
-      videoRef.current.src = url;
-    }
-  }, [url]);
-
-  return (
-    <div className="bg-black rounded-lg overflow-hidden">
-      <div className="bg-gray-900 text-white px-4 py-2 font-semibold">
-        {title}
-      </div>
-      <video
-        ref={videoRef}
-        controls
-        autoPlay
-        muted
-        className="w-full h-64 object-cover"
-      />
     </div>
   );
 }
