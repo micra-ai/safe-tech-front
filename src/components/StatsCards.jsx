@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getDashboardMetrics, iniciarDeteccion, detenerDeteccion } from "../api";
+import { getDashboardMetrics, getEstadoDeteccion, setEstadoDeteccion } from "../api";
 
 // 🔑 Diccionario de traducción
 const EPP_LABELS = {
@@ -14,9 +14,10 @@ export default function StatsCards() {
   const [metrics, setMetrics] = useState({});
   const [activo, setActivo] = useState(false);
 
-  // Cargar métricas al inicio
+  // Cargar métricas y estado al inicio
   useEffect(() => {
     getDashboardMetrics().then(setMetrics);
+    getEstadoDeteccion().then((res) => setActivo(res.activo));
   }, []);
 
   // Refrescar métricas cada 5s si está activo
@@ -30,12 +31,12 @@ export default function StatsCards() {
     return () => clearInterval(interval);
   }, [activo]);
 
-  // Iniciar/detener detección
+  // Iniciar/detener detección remoto
   const manejarDeteccion = () => {
     if (!activo) {
-      iniciarDeteccion().then(() => setActivo(true));
+      setEstadoDeteccion(true).then(() => setActivo(true));
     } else {
-      detenerDeteccion().then(() => setActivo(false));
+      setEstadoDeteccion(false).then(() => setActivo(false));
     }
   };
 

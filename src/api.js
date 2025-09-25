@@ -104,3 +104,14 @@ export const getUsuarios = () => fetchJSON("/usuarios");
 
 export const deleteUsuario = (id) =>
   fetchJSON(`/usuarios/${id}`, { method: "DELETE" });
+
+
+// Estado remoto de detección
+export const getEstadoDeteccion = () => fetchJSON("/deteccion/estado");
+
+export const setEstadoDeteccion = (activo) =>
+  fetchJSON("/deteccion/estado", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ activo }),
+  });
