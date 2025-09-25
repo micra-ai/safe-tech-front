@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
-import { getDashboardMetrics, getEstadoDeteccion, setEstadoDeteccion } from "../api";
+import {
+  getDashboardMetrics,
+  getEstadoDeteccion,
+  setEstadoDeteccion,
+} from "../api";
 
-// 🔑 Diccionario de traducción
+// Diccionario de traducción
 const EPP_LABELS = {
   helmet: "Casco",
   safety_vest: "Chaleco Reflectante",
@@ -31,16 +35,14 @@ export default function StatsCards() {
     return () => clearInterval(interval);
   }, [activo]);
 
-  // Iniciar/detener detección remoto
+  // Cambiar estado remoto de detección
   const manejarDeteccion = () => {
-    if (!activo) {
-      setEstadoDeteccion(true).then(() => setActivo(true));
-    } else {
-      setEstadoDeteccion(false).then(() => setActivo(false));
-    }
+    setEstadoDeteccion(!activo).then((res) => {
+      setActivo(res.estado.activo);
+    });
   };
 
-  // Reiniciar métricas solo en frontend (sin tocar base de datos)
+  // Reiniciar métricas en frontend
   const reiniciarMetricas = () => {
     setMetrics({
       incumplimientos_epp: 0,
@@ -104,7 +106,6 @@ export default function StatsCards() {
           <span>🚨</span>
           <h3 className="text-sm font-semibold">Últimas alertas</h3>
         </div>
-
         <div className="p-4">
           {metrics?.ultimas?.slice(0, 2).map((alerta, idx) => (
             <div key={idx} className="flex justify-between text-sm mt-2">
