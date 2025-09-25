@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import Hls from "hls.js";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-console.log("🚀 API_URL en runtime:", API_URL);
+// ⚠️ Ponemos la IP local del PC faena
+const API_URL_STREAM = "http://192.168.1.34:5000";
 
 export default function Camaras() {
   const camaras = [
@@ -19,8 +19,7 @@ export default function Camaras() {
         {camaras.map((cam) => (
           <VideoPlayer
             key={cam.id}
-            // ✅ ahora apunta a index.m3u8 que genera ffmpeg
-            url={`${API_URL}/stream/${cam.id}/index.m3u8`}
+            url={`${API_URL_STREAM}/stream/${cam.id}/index.m3u8`}
             title={cam.title}
           />
         ))}
