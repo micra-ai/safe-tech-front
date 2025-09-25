@@ -10,16 +10,11 @@ async function fetchJSON(path, opts = {}) {
   return res.json();
 }
 
-/* ---------- Live detect ---------- */
-export const iniciarDeteccion = () =>
-  fetchJSON("/detectar_continuo", { method: "POST" });
-export const detenerDeteccion = () =>
-  fetchJSON("/detener", { method: "POST" });
 
 /* ---------- Métricas ---------- */
 export async function getDashboardMetrics() {
   try {
-    return await fetchJSON("/dashboard/metrics");
+    return await fetchJSON("/dashboard_metrics");
   } catch {
     return {
       incumplimientos_epp: 0,
@@ -29,6 +24,7 @@ export async function getDashboardMetrics() {
     };
   }
 }
+
 
 // 🔑 Nuevo endpoint de tendencia corregido
 export const getDashboardTrend = () => fetchJSON("/dashboard/trend");
