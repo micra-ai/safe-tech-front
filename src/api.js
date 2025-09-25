@@ -1,8 +1,18 @@
-export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+// api.js
+
+// Usa la URL de entorno (Vercel/Render/ngrok) o localhost por defecto
+export const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+// Función auxiliar para rutas absolutas
 export const abs = (p) => (p?.startsWith("http") ? p : `${API_URL}${p}`);
 
+// Helper genérico para fetch
 async function fetchJSON(path, opts = {}) {
-  const res = await fetch(`${API_URL}${path}`, opts);
+  const res = await fetch(abs(path), {
+    headers: { "Content-Type": "application/json" },
+    ...opts,
+  });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(text || `HTTP ${res.status}`);
@@ -10,11 +20,10 @@ async function fetchJSON(path, opts = {}) {
   return res.json();
 }
 
-
 /* ---------- Métricas ---------- */
 export async function getDashboardMetrics() {
   try {
-    return await fetchJSON("/dashboard_metrics");
+    return await fetchJSON("/dashboard_metrics"); // ⚠️ en backend es con guion bajo
   } catch {
     return {
       incumplimientos_epp: 0,
@@ -25,20 +34,20 @@ export async function getDashboardMetrics() {
   }
 }
 
-
-// 🔑 Nuevo endpoint de tendencia corregido
+// 🔹 Tendencia (si tu backend lo implementa)
 export const getDashboardTrend = () => fetchJSON("/dashboard/trend");
 
-export const reiniciarMetricas   = () => fetchJSON("/dashboard/reset", { method: "POST" });
+// 🔹 Reiniciar métricas
+export const reiniciarMetricas = () =>
+  fetchJSON("/dashboard/reset", { method: "POST" });
 
 /* ---------- Reportes ---------- */
 export const getFechasDisponibles = () => fetchJSON("/fechas-disponibles");
-export const getReportesAlertas   = () => fetchJSON("/reportes-alertas");
+export const getReportesAlertas = () => fetchJSON("/reportes-alertas");
 
 /* ---------- Timelapse general ---------- */
 export const getTimelapseDias = () => fetchJSON("/timelapse/dias");
 
-/** Frames del timelapse general (por día y canal). */
 export async function getTimelapse(dia, canal) {
   if (!dia) return [];
   const q = new URLSearchParams({ dia });
@@ -62,7 +71,9 @@ export async function getTimelapseDeteccionesDias(canal) {
 export const subirYDetectarVideo = async (file) => {
   const fd = new FormData();
   fd.append("file", file);
-  return fetchJSON("/detectar/video", { method: "POST", body: fd });
+  return fetch(`${API_URL}/detectar/video`, { method: "POST", body: fd }).then(
+    (res) => res.json()
+  );
 };
 export const listarVideos = () => fetchJSON("/videos");
 
@@ -70,25 +81,16 @@ export const listarVideos = () => fetchJSON("/videos");
 export const registerUser = (data) =>
   fetchJSON("/auth/register", {
     method: "POST",
+    body: JSON.stringify(data),
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      nombre: data.nombre,
-      correo: data.correo,
-      password: data.password,
-    }),
   });
-
 
 export const loginUser = (data) =>
   fetchJSON("/auth/login", {
     method: "POST",
+    body: JSON.stringify(data),
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      correo: data.correo,
-      password: data.password,
-    }),
   });
-
 
 export const getCurrentUser = () => fetchJSON("/auth/me");
 
@@ -97,17 +99,15 @@ export const logoutUser = () =>
 
 /* ---------- Gestión de usuarios (solo admin) ---------- */
 export const getUsuarios = () => fetchJSON("/usuarios");
-
 export const deleteUsuario = (id) =>
   fetchJSON(`/usuarios/${id}`, { method: "DELETE" });
 
-
-// Estado remoto de detección
+/* ---------- Estado remoto de detección ---------- */
 export const getEstadoDeteccion = () => fetchJSON("/deteccion/estado");
 
 export const setEstadoDeteccion = (activo) =>
   fetchJSON("/deteccion/estado", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ activo }),
+    headers: { "Content-Type": "application/json" },
   });
