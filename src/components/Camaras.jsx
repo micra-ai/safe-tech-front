@@ -4,7 +4,7 @@ import Hls from "hls.js";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 console.log("🚀 API_URL en runtime:", API_URL);
 
-
+export default function Camaras() {
   const camaras = [
     { id: "channel1", title: "Cámara 1" },
     { id: "channel2", title: "Cámara 2" },
@@ -19,14 +19,15 @@ console.log("🚀 API_URL en runtime:", API_URL);
         {camaras.map((cam) => (
           <VideoPlayer
             key={cam.id}
-            url={`${API_URL}/stream/${cam.id}.m3u8`}
+            // ✅ ahora apunta a index.m3u8 que genera ffmpeg
+            url={`${API_URL}/stream/${cam.id}/index.m3u8`}
             title={cam.title}
           />
         ))}
       </div>
     </div>
   );
-
+}
 
 function VideoPlayer({ url, title }) {
   const videoRef = useRef(null);
