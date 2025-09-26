@@ -4,7 +4,6 @@ import {
   getTimelapseDias,
   getTimelapseDetecciones,
   getTimelapseDeteccionesDias,
-  abs,
 } from "../api";
 
 function hhmmssFromPath(p) {
