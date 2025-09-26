@@ -23,7 +23,7 @@ async function fetchJSON(path, opts = {}) {
 /* ---------- Métricas ---------- */
 export async function getDashboardMetrics() {
   try {
-    return await fetchJSON("/dashboard/metrics"); // ⚠️ en backend es con guion bajo
+    return await fetchJSON("/dashboard_metrics"); // ✅ corregido
   } catch {
     return {
       incumplimientos_epp: 0,
@@ -34,12 +34,13 @@ export async function getDashboardMetrics() {
   }
 }
 
-// 🔹 Tendencia (si tu backend lo implementa)
-export const getDashboardTrend = () => fetchJSON("/dashboard/trend");
+// 🔹 Tendencia
+export const getDashboardTrend = () => fetchJSON("/dashboard_trend");
 
 // 🔹 Reiniciar métricas
 export const reiniciarMetricas = () =>
-  fetchJSON("/dashboard/reset", { method: "POST" });
+  fetchJSON("/dashboard_reset", { method: "POST" });
+
 
 /* ---------- Reportes ---------- */
 export const getFechasDisponibles = () => fetchJSON("/fechas-disponibles");
