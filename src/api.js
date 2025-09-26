@@ -1,5 +1,5 @@
 // ========= API base =========
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000";
+const API_URL = import.meta.env.VITE_API_URL || "https://techebr.duckdns.org";
 export default API_URL;   // 👈 export default para usar en Camaras.jsx
 
 console.log("🚀 API_URL en runtime:", API_URL);
