@@ -1,15 +1,13 @@
 import { useEffect, useRef } from "react";
 import Hls from "hls.js";
-import { API_URL } from "../api";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { API_URL } from "../api";   // 👈 Usa solo esta, elimina la otra
 
 function VideoPlayer({ channel, title }) {
   const videoRef = useRef(null);
 
   useEffect(() => {
     const video = videoRef.current;
-    const url = `${API_URL}/stream/${channel}/index.m3u8`;
+    const url = `${API_URL}/stream/${channel}/index.m3u8`;  // ✅ usa API_URL importado
 
     if (Hls.isSupported()) {
       const hls = new Hls();
@@ -43,7 +41,7 @@ export default function Camaras() {
         {camaras.map((cam) => (
           <VideoPlayer
             key={cam.id}
-            channel={cam.id}   // ✅ usa channel, no url
+            channel={cam.id}
             title={cam.title}
           />
         ))}
@@ -51,3 +49,4 @@ export default function Camaras() {
     </div>
   );
 }
+
