@@ -1,58 +1,53 @@
-// api.js
-
-// Usa la URL de entorno (Vercel/Render/ngrok) o localhost por defecto
-const API_URL = import.meta.env.VITE_API_URL;
+// ========= API base =========
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+export default API_URL;   // 👈 export default para usar en Camaras.jsx
 
 console.log("🚀 API_URL en runtime:", API_URL);
 
-export async function fetchJSON(path, opts = {}) {
+// ========= Helper para fetch =========
+async function fetchJSON(path, opts = {}) {
   console.log("👉 Llamando a:", `${API_URL}${path}`);
-
   const res = await fetch(`${API_URL}${path}`, {
     headers: { "Content-Type": "application/json" },
     ...opts,
   });
 
-  console.log("🔵 Respuesta completa:", res);
-
-  // Leemos como texto para verificar si devuelve JSON o HTML
+  // Leer respuesta como texto para debug
   const text = await res.text();
   console.log("🔵 Body recibido:", text);
 
   try {
-    return JSON.parse(text);   // Intentamos parsear a JSON
-  } catch (err) {
-    console.error("❌ Error: no es JSON válido");
-    throw err;
-  }
-}
-
-/* ---------- Métricas ---------- */
-export async function getDashboardMetrics() {
-  try {
-    return await fetchJSON("/dashboard/metrics"); // ✅ corregido
+    return JSON.parse(text);
   } catch {
-    return {
-      incumplimientos_epp: 0,
-      porcentaje_cumplimiento: 100,
-      epp_mas_incumplidos: [],
-      ultimas: [],
-    };
+    console.error("❌ No es JSON válido");
+    throw new Error(text);
   }
 }
 
-// 🔹 Tendencia
-export const getDashboardTrend = () => fetchJSON("/dashboard/trend"); // ✅ corregido
+// ========= Métricas =========
+export async function getDashboardMetrics() {
+  return fetchJSON("/dashboard/metrics");
+}
 
-// 🔹 Reiniciar métricas
-export const reiniciarMetricas = () =>
-  fetchJSON("/dashboard/reset", { method: "POST" }); // ✅ corregido
+export async function getDashboardTrend() {
+  return fetchJSON("/dashboard/trend");
+}
 
-/* ---------- Reportes ---------- */
-export const getFechasDisponibles = () => fetchJSON("/fechas-disponibles");
-export const getReportesAlertas = () => fetchJSON("/reportes-alertas");
+export async function reiniciarMetricas() {
+  return fetchJSON("/dashboard/reset", { method: "POST" });
+}
 
-/* ---------- Timelapse general ---------- */
+// ========= Estado detección =========
+export const getEstadoDeteccion = () => fetchJSON("/deteccion/estado");
+
+export const setEstadoDeteccion = (activo) =>
+  fetchJSON("/deteccion/estado", {
+    method: "POST",
+    body: JSON.stringify({ activo }),
+    headers: { "Content-Type": "application/json" },
+  });
+
+// ========= Timelapse =========
 export const getTimelapseDias = () => fetchJSON("/timelapse/dias");
 
 export async function getTimelapse(dia, canal) {
@@ -62,7 +57,6 @@ export async function getTimelapse(dia, canal) {
   return fetchJSON(`/timelapse?${q.toString()}`);
 }
 
-/* ---------- Timelapse de detecciones ---------- */
 export async function getTimelapseDetecciones(dia, canal) {
   if (!dia || !canal) return [];
   const q = new URLSearchParams({ dia, canal });
@@ -74,17 +68,24 @@ export async function getTimelapseDeteccionesDias(canal) {
   return fetchJSON(`/timelapse_detecciones/dias?${q.toString()}`);
 }
 
-/* ---------- Videos ---------- */
+// ========= Reportes =========
+export const getFechasDisponibles = () => fetchJSON("/fechas-disponibles");
+export const getReportesAlertas   = () => fetchJSON("/reportes-alertas");
+
+// ========= Videos =========
 export const subirYDetectarVideo = async (file) => {
   const fd = new FormData();
   fd.append("file", file);
-  return fetch(`${API_URL}/detectar/video`, { method: "POST", body: fd }).then(
-    (res) => res.json()
-  );
+  const res = await fetch(`${API_URL}/detectar/video`, {
+    method: "POST",
+    body: fd,
+  });
+  return res.json();
 };
+
 export const listarVideos = () => fetchJSON("/videos");
 
-/* ---------- Auth ---------- */
+// ========= Auth =========
 export const registerUser = (data) =>
   fetchJSON("/auth/register", {
     method: "POST",
@@ -100,25 +101,12 @@ export const loginUser = (data) =>
   });
 
 export const getCurrentUser = () => fetchJSON("/auth/me");
+export const logoutUser     = () => fetchJSON("/auth/logout", { method: "POST" });
 
-export const logoutUser = () =>
-  fetchJSON("/auth/logout", { method: "POST" });
-
-/* ---------- Gestión de usuarios (solo admin) ---------- */
+// ========= Gestión de usuarios (solo admin) =========
 export const getUsuarios = () => fetchJSON("/usuarios");
 export const deleteUsuario = (id) =>
   fetchJSON(`/usuarios/${id}`, { method: "DELETE" });
-
-/* ---------- Estado remoto de detección ---------- */
-export const getEstadoDeteccion = () => fetchJSON("/deteccion/estado");
-
-export const setEstadoDeteccion = (activo) =>
-  fetchJSON("/deteccion/estado", {
-    method: "POST",
-    body: JSON.stringify({ activo }),
-    headers: { "Content-Type": "application/json" },
-  });
-
 
 
 

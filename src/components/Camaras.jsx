@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import Hls from "hls.js";
-import API_URL from "../api";   // ✅ Importación correcta
+import API_URL from "../api";   // 👈 se importa como default, sin {}
 
 function VideoPlayer({ channel, title }) {
   const videoRef = useRef(null);
