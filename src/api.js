@@ -23,7 +23,7 @@ async function fetchJSON(path, opts = {}) {
 /* ---------- Métricas ---------- */
 export async function getDashboardMetrics() {
   try {
-    return await fetchJSON("/dashboard_metrics"); // ⚠️ en backend es con guion bajo
+    return await fetchJSON("/dashboard/metrics"); // ⚠️ en backend es con guion bajo
   } catch {
     return {
       incumplimientos_epp: 0,
