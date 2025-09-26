@@ -1,27 +1,26 @@
 import { useEffect, useRef } from "react";
 import Hls from "hls.js";
-import API_URL from "../api";   // 👈 Usa solo esta, elimina la otra
+import API_URL from "../api";   // ✅ Importación correcta
 
 function VideoPlayer({ channel, title }) {
   const videoRef = useRef(null);
 
   useEffect(() => {
-    const video = videoRef.current;
-    const url = `${API_URL}/stream/${channel}/index.m3u8`;  // ✅ usa API_URL importado
-
-    if (Hls.isSupported()) {
-      const hls = new Hls();
-      hls.loadSource(url);
-      hls.attachMedia(video);
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = url;
+    if (videoRef.current) {
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(`${API_URL}/stream/${channel}/index.m3u8`);
+        hls.attachMedia(videoRef.current);
+      } else if (videoRef.current.canPlayType("application/vnd.apple.mpegurl")) {
+        videoRef.current.src = `${API_URL}/stream/${channel}/index.m3u8`;
+      }
     }
   }, [channel]);
 
   return (
-    <div className="bg-gray-900 rounded-lg overflow-hidden shadow">
-      <div className="px-4 py-2 font-bold text-white bg-gray-800">{title}</div>
+    <div className="bg-black rounded-lg overflow-hidden shadow">
       <video ref={videoRef} controls autoPlay muted className="w-full h-64" />
+      <div className="p-2 text-center text-white bg-gray-800">{title}</div>
     </div>
   );
 }
@@ -39,14 +38,9 @@ export default function Camaras() {
       <h2 className="text-2xl font-bold mb-6">Cámaras en vivo</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {camaras.map((cam) => (
-          <VideoPlayer
-            key={cam.id}
-            channel={cam.id}
-            title={cam.title}
-          />
+          <VideoPlayer key={cam.id} channel={cam.id} title={cam.title} />
         ))}
       </div>
     </div>
   );
 }
-
