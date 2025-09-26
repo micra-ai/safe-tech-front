@@ -2,9 +2,6 @@ import { useEffect, useRef } from "react";
 import Hls from "hls.js";
 import { API_URL } from "../api";
 
-console.log("API_URL:", import.meta.env.VITE_API_URL);
-
-
 function VideoPlayer({ channel, title }) {
   const videoRef = useRef(null);
 
@@ -42,7 +39,11 @@ export default function Camaras() {
       <h2 className="text-2xl font-bold mb-6">Cámaras en vivo</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {camaras.map((cam) => (
-          <VideoPlayer key={cam.id} channel={cam.id} title={cam.title} />
+          <VideoPlayer
+            key={cam.id}
+            channel={cam.id}   // ✅ usa channel, no url
+            title={cam.title}
+          />
         ))}
       </div>
     </div>
