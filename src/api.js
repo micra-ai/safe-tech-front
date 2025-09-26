@@ -1,8 +1,8 @@
 // api.js
 
 // Usa la URL de entorno (Vercel/Render/ngrok) o localhost por defecto
-export const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000";
+  export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+console.log("🚀 API_URL en runtime:", API_URL);
 
 // Función auxiliar para rutas absolutas
 export const abs = (p) => (p?.startsWith("http") ? p : `${API_URL}${p}`);
