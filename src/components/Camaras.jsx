@@ -2,6 +2,9 @@ import { useEffect, useRef } from "react";
 import Hls from "hls.js";
 import { API_URL } from "../api";
 
+console.log("API_URL:", import.meta.env.VITE_API_URL);
+
+
 function VideoPlayer({ channel, title }) {
   const videoRef = useRef(null);
 
