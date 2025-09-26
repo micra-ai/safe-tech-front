@@ -1,23 +1,30 @@
 // api.js
 
 // Usa la URL de entorno (Vercel/Render/ngrok) o localhost por defecto
-export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL;
+
 console.log("🚀 API_URL en runtime:", API_URL);
 
-// Función auxiliar para rutas absolutas
-export const abs = (p) => (p?.startsWith("http") ? p : `${API_URL}${p}`);
+export async function fetchJSON(path, opts = {}) {
+  console.log("👉 Llamando a:", `${API_URL}${path}`);
 
-// Helper genérico para fetch
-async function fetchJSON(path, opts = {}) {
-  const res = await fetch(abs(path), {
+  const res = await fetch(`${API_URL}${path}`, {
     headers: { "Content-Type": "application/json" },
     ...opts,
   });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(text || `HTTP ${res.status}`);
+
+  console.log("🔵 Respuesta completa:", res);
+
+  // Leemos como texto para verificar si devuelve JSON o HTML
+  const text = await res.text();
+  console.log("🔵 Body recibido:", text);
+
+  try {
+    return JSON.parse(text);   // Intentamos parsear a JSON
+  } catch (err) {
+    console.error("❌ Error: no es JSON válido");
+    throw err;
   }
-  return res.json();
 }
 
 /* ---------- Métricas ---------- */
@@ -111,3 +118,23 @@ export const setEstadoDeteccion = (activo) =>
     body: JSON.stringify({ activo }),
     headers: { "Content-Type": "application/json" },
   });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
