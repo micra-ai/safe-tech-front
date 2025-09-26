@@ -1,7 +1,7 @@
 // api.js
 
 // Usa la URL de entorno (Vercel/Render/ngrok) o localhost por defecto
-  export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 console.log("🚀 API_URL en runtime:", API_URL);
 
 // Función auxiliar para rutas absolutas
@@ -23,7 +23,7 @@ async function fetchJSON(path, opts = {}) {
 /* ---------- Métricas ---------- */
 export async function getDashboardMetrics() {
   try {
-    return await fetchJSON("/dashboard_metrics"); // ✅ corregido
+    return await fetchJSON("/dashboard/metrics"); // ✅ corregido
   } catch {
     return {
       incumplimientos_epp: 0,
@@ -35,12 +35,11 @@ export async function getDashboardMetrics() {
 }
 
 // 🔹 Tendencia
-export const getDashboardTrend = () => fetchJSON("/dashboard_trend");
+export const getDashboardTrend = () => fetchJSON("/dashboard/trend"); // ✅ corregido
 
 // 🔹 Reiniciar métricas
 export const reiniciarMetricas = () =>
-  fetchJSON("/dashboard_reset", { method: "POST" });
-
+  fetchJSON("/dashboard/reset", { method: "POST" }); // ✅ corregido
 
 /* ---------- Reportes ---------- */
 export const getFechasDisponibles = () => fetchJSON("/fechas-disponibles");
