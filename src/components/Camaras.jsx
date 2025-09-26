@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import Hls from "hls.js";
-import { API_URL } from "../api";   // 👈 Usa solo esta, elimina la otra
+import API_URL from "../api";   // 👈 Usa solo esta, elimina la otra
 
 function VideoPlayer({ channel, title }) {
   const videoRef = useRef(null);
