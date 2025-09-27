@@ -2,20 +2,16 @@ import { useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-// Traducción de etiquetas YOLO → español
+// 👇 importa tu base de API y helpers
+import API_URL, { getFechasDisponibles } from "../api";
+
+// Traducción de etiquetas YOLO → español (solo para mostrar en la nota)
 const EPP_LABELS = {
   helmet: "Casco",
   safety_vest: "Chaleco",
   safety_jacket: "Chaqueta",
   safety_shoes: "Zapatos",
   safety_overall: "Overol",
-};
-
-
-// Llama al backend
-const getFechasDisponibles = async () => {
-  const res = await fetch("http://localhost:5000/fechas-disponibles");
-  return res.json();
 };
 
 export default function ReportesAlertas() {
@@ -25,38 +21,49 @@ export default function ReportesAlertas() {
   const [archivoGenerado, setArchivoGenerado] = useState(null);
 
   useEffect(() => {
-    getFechasDisponibles().then((fechas) => {
-      // transformar strings "2025-07-23" a objetos Date
-      setFechasDisponibles(fechas.map((f) => new Date(f)));
-    });
+    // ✅ usa el helper que ya respeta API_URL
+    getFechasDisponibles()
+      .then((fechas) => {
+        // fechas viene como ["2025-07-23", ...] → convierto a Date
+        setFechasDisponibles(fechas.map((f) => new Date(f)));
+      })
+      .catch((err) => {
+        console.error("Error al cargar fechas disponibles:", err);
+        setFechasDisponibles([]);
+      });
   }, []);
 
-  const estaHabilitada = (date) => {
-    return fechasDisponibles.some(
+  const estaHabilitada = (date) =>
+    fechasDisponibles.some(
       (f) =>
         f.getFullYear() === date.getFullYear() &&
         f.getMonth() === date.getMonth() &&
         f.getDate() === date.getDate()
     );
-  };
 
   const generarReporte = async () => {
     if (!fechaInicio || !fechaFin) {
       alert("Selecciona ambas fechas");
       return;
     }
+    try {
+      const inicioStr = fechaInicio.toISOString().slice(0, 10);
+      const finStr = fechaFin.toISOString().slice(0, 10);
 
-    const inicioStr = fechaInicio.toISOString().slice(0, 10);
-    const finStr = fechaFin.toISOString().slice(0, 10);
+      const res = await fetch(
+        `${API_URL}/generar-reporte?inicio=${inicioStr}&fin=${finStr}`
+      );
+      const data = await res.json();
 
-    const res = await fetch(
-      `http://localhost:5000/generar-reporte?inicio=${inicioStr}&fin=${finStr}`
-    );
-    const data = await res.json();
-
-    // 🔑 Traducir los nombres del archivo para mostrar en UI
-    if (data.archivo) {
-      setArchivoGenerado(data.archivo);
+      if (data && data.archivo) {
+        setArchivoGenerado(data.archivo);
+      } else {
+        setArchivoGenerado(null);
+        alert("No se pudo generar el reporte.");
+      }
+    } catch (e) {
+      console.error("Error generando reporte:", e);
+      alert("Ocurrió un error generando el reporte.");
     }
   };
 
@@ -97,7 +104,7 @@ export default function ReportesAlertas() {
 
       {archivoGenerado && (
         <a
-          href={`http://localhost:5000/descargar-reporte/${archivoGenerado}`}
+          href={`${API_URL}/descargar-reporte/${archivoGenerado}`}
           className="text-blue-600 underline text-sm"
           download
         >
@@ -105,13 +112,16 @@ export default function ReportesAlertas() {
         </a>
       )}
 
-      {/* Ejemplo: vista previa de cómo se mostrarían los nombres en español */}
       {archivoGenerado && (
         <div className="mt-4 text-sm text-gray-600">
-          <p><strong>Nota:</strong> Los EPP se mostrarán como:</p>
+          <p>
+            <strong>Nota:</strong> Los EPP se mostrarán como:
+          </p>
           <ul className="list-disc ml-6">
             {Object.entries(EPP_LABELS).map(([key, value]) => (
-              <li key={key}>{key} → {value}</li>
+              <li key={key}>
+                {key} → {value}
+              </li>
             ))}
           </ul>
         </div>
