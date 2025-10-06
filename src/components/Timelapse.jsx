@@ -40,7 +40,7 @@ export default function Timelapse({
   const [err, setErr] = useState("");
   const timerRef = useRef(null);
 
-  // 🔹 Carga los días disponibles
+  // 🔹 Cargar los días disponibles
   useEffect(() => {
     async function loadDays() {
       try {
@@ -63,7 +63,7 @@ export default function Timelapse({
     loadDays();
   }, [canal, mode]);
 
-  // 🔹 Carga los frames (imágenes)
+  // 🔹 Cargar los frames (imágenes)
   useEffect(() => {
     if (!dia || !canal) {
       setFrames([]); setIdx(0); setPlaying(false);
@@ -78,7 +78,8 @@ export default function Timelapse({
 
     Promise.resolve(fetcher)
       .then((data) => {
-        const arr = Array.isArray(data) ? data : [];
+        // ✅ Convierte rutas relativas en absolutas
+        const arr = Array.isArray(data) ? data.map((p) => abs(p)) : [];
         setFrames(arr);
         setIdx(0);
         setPlaying(autoPlay && arr.length > 0);
@@ -105,7 +106,7 @@ export default function Timelapse({
   useEffect(() => {
     if (frames.length === 0) return;
     const next = frames[(idx + 1) % frames.length];
-    if (next) { const img = new Image(); img.src = abs(next); }
+    if (next) { const img = new Image(); img.src = next; }
   }, [idx, frames]);
 
   const current = useMemo(() => frames[idx] || "", [frames, idx]);
@@ -171,7 +172,7 @@ export default function Timelapse({
             {/* Imagen */}
             <div className="relative overflow-hidden rounded-xl ring-1 ring-gray-200">
               <img
-                src={abs(current)}
+                src={current}
                 alt={`Frame ${idx + 1} / ${frames.length}`}
                 className="block w-full max-h-[180px] object-cover"
                 onError={() => setErr("Imagen no disponible")}
