@@ -6,6 +6,16 @@ import {
   getTimelapseDeteccionesDias,
 } from "../api";
 
+const API_URL = "https://techsyncore.duckdns.org";
+
+// 🔹 Convierte la ruta relativa en absoluta
+function abs(p) {
+  if (!p) return "";
+  if (p.startsWith("http")) return p;
+  return `${API_URL}/${p.replace(/^\//, "")}`;
+}
+
+// 🔹 Extrae hora desde el nombre del archivo
 function hhmmssFromPath(p) {
   if (!p) return "";
   const m = p.match(/_(\d{6})(?:_|\.jpg)/i);
@@ -30,17 +40,18 @@ export default function Timelapse({
   const [err, setErr] = useState("");
   const timerRef = useRef(null);
 
+  // 🔹 Carga los días disponibles
   useEffect(() => {
     async function loadDays() {
       try {
         if (mode === "detecciones" && canal) {
           const ds = await getTimelapseDeteccionesDias(canal);
-          setDias(ds);
+          setDias(Array.isArray(ds) ? ds : []);
           if (ds?.length && !dia) setDia(ds[ds.length - 1]);
           if (!ds?.length) setDia("");
         } else {
           const ds = await getTimelapseDias();
-          setDias(ds);
+          setDias(Array.isArray(ds) ? ds : []);
           if (ds?.length && !dia) setDia(ds[ds.length - 1]);
           if (!ds?.length) setDia("");
         }
@@ -52,12 +63,14 @@ export default function Timelapse({
     loadDays();
   }, [canal, mode]);
 
+  // 🔹 Carga los frames (imágenes)
   useEffect(() => {
     if (!dia || !canal) {
       setFrames([]); setIdx(0); setPlaying(false);
       return;
     }
     setLoading(true); setErr("");
+
     const fetcher =
       mode === "detecciones"
         ? getTimelapseDetecciones(dia, canal)
@@ -79,6 +92,7 @@ export default function Timelapse({
       .finally(() => setLoading(false));
   }, [dia, canal, autoPlay, mode]);
 
+  // 🔹 Reproducción automática
   useEffect(() => {
     if (!playing || frames.length === 0) return;
     timerRef.current = setInterval(() => {
@@ -87,6 +101,7 @@ export default function Timelapse({
     return () => clearInterval(timerRef.current);
   }, [playing, frames, speedMs]);
 
+  // 🔹 Precarga siguiente imagen
   useEffect(() => {
     if (frames.length === 0) return;
     const next = frames[(idx + 1) % frames.length];
