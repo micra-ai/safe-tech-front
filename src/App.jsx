@@ -45,18 +45,9 @@ function ReportesView() {
 }
 
 function TimelapseView() {
-  return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <h2 className="text-2xl font-bold mb-6">Timelapse de Cámaras</h2>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-12">
-        <Timelapse title="Cámara 1" canal="Channel1" mode="detecciones" autoPlay />
-        <Timelapse title="Cámara 2" canal="Channel2" mode="detecciones" autoPlay />
-        <Timelapse title="Cámara 3" canal="Channel3" mode="detecciones" autoPlay />
-        <Timelapse title="Cámara 4" canal="Channel4" mode="detecciones" autoPlay />
-      </div>
-    </div>
-  );
+  return <Timelapse />;
 }
+
 
 /* ---------- App principal ---------- */
 function App() {
