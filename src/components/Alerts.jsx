@@ -44,7 +44,7 @@ export default function Detecciones() {
           return prev;
         }
       });
-    }, 2000); // cada 2 segundos
+    }, 1000); // cada 2 segundos
 
     return () => clearInterval(interval);
   }, [running, todas]);
