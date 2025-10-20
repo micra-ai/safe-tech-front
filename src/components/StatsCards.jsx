@@ -100,23 +100,22 @@ export default function StatsCards() {
         </div>
       </div>
 
-      {/* Tarjeta 3: Últimas alertas */}
+            {/* Tarjeta 3: Imágenes procesadas */}
       <div className="bg-white shadow rounded-lg">
-        <div className="bg-gray-100 text-[#112d5a] px-4 py-2 rounded-t-lg flex items-center gap-2">
-          <span>🚨</span>
-          <h3 className="text-sm font-semibold">Últimas alertas</h3>
+        <div className="bg-blue-100 text-blue-700 px-4 py-2 rounded-t-lg flex items-center gap-2">
+          <span>📸</span>
+          <h3 className="text-sm font-semibold">Imágenes procesadas</h3>
         </div>
-        <div className="p-4">
-          {metrics?.ultimas?.slice(0, 2).map((alerta, idx) => (
-            <div key={idx} className="flex justify-between text-sm mt-2">
-              <span>{alerta.timestamp.split(" ")[0]}</span>
-              <span className="text-red-600 font-semibold">
-                {alerta.epp_faltantes.length}
-              </span>
-            </div>
-          ))}
+        <div className="p-4 text-center">
+          <p className="text-4xl font-bold text-blue-700 mt-2">
+            {metrics?.imagenes_procesadas ?? 0}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Total de imágenes analizadas hoy
+          </p>
         </div>
       </div>
+
 
     </div>
   );
