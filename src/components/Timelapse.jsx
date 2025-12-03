@@ -49,7 +49,7 @@ export default function Timelapse() {
                 ? prev[canal] + 1
                 : 0, // vuelve al inicio
           }));
-        }, 300); // velocidad de animación (ms por frame)
+        }, 1200); // velocidad de animación (ms por frame)
       }
     });
     return () => Object.values(intervalos).forEach(clearInterval);
