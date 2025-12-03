@@ -87,20 +87,23 @@ export default function Timelapse() {
 
     {/* Transformar URL original → URL procesada */}
     {(() => {
-      const frameUrl = imagenes[canal][frameActual[canal] || 0];
-      const processedUrl = frameUrl.replace(
-        "timelapse_frames",
-        "timelapse_processed"
-      );
+  const frameUrl = imagenes[canal][frameActual[canal] || 0];
 
-      return (
-        <img
-          src={`${API_URL}${processedUrl}`}
-          alt={`Frame ${frameActual[canal]}`}
-          className="rounded-lg shadow-md w-full object-cover"
-        />
-      );
-    })()}
+  // Fuerza a que SIEMPRE sea la versión procesada
+  const processedUrl = frameUrl.replace(
+    "timelapse_frames",
+    "timelapse_processed"
+  );
+
+  return (
+    <img
+      src={`${API_URL}${processedUrl}`}
+      alt={`Frame ${frameActual[canal]}`}
+      className="rounded-lg shadow-md w-full object-cover"
+    />
+  );
+})()}
+
 
     <p className="absolute bottom-2 right-3 text-xs bg-black bg-opacity-50 text-white px-2 py-1 rounded">
       {frameActual[canal] + 1}/{imagenes[canal].length}
