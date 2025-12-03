@@ -15,7 +15,8 @@ export default function Timelapse() {
       fetch(`${API_URL}/timelapse_detecciones/dias?canal=${canal}`)
         .then((res) => res.json())
         .then((data) => {
-          setFechas((prev) => ({ ...prev, [canal]: data[canal] || [] }));
+          setFechas((prev) => ({ ...prev, [canal]: data || [] }));
+
         })
         .catch((err) => console.error(err));
     });
