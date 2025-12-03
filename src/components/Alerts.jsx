@@ -80,37 +80,58 @@ export default function Detecciones() {
         </p>
       ) : (
         <ul className="space-y-4 max-h-[70vh] overflow-y-auto transition-all duration-500">
-          {visibles.map((d, i) => (
-            <li
-              key={i}
-              className="border rounded-lg shadow-sm p-2 flex items-center gap-4 hover:bg-gray-50 transition"
-            >
-              <img
-                src={`${API_URL}${d.imagen}`}
-                alt="detección"
-                className="w-32 h-20 object-cover rounded"
-              />
-              <div>
-                <p className="text-sm text-gray-700">
-                  <strong>🕒 Fecha:</strong> {d.timestamp}
-                </p>
-                <p className="text-sm text-gray-700">
-                  <strong>🎥 Canal:</strong> {d.canal}
-                </p>
-                <p className="text-sm text-gray-700">
-                  <strong>✅ Detectados:</strong>{" "}
-                  {d.detectados.map((e) => EPP_LABELS[e] || e).join(", ")}
-                </p>
-                <p className="text-sm text-gray-700">
-                  <strong>⚠️ Faltantes:</strong>{" "}
-                  {d.faltantes.length > 0
-                    ? d.faltantes.map((e) => EPP_LABELS[e] || e).join(", ")
-                    : "Ninguno"}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
+  {visibles.map((d, i) => {
+    // Detectar alertas:
+    const tieneWithout =
+      JSON.stringify(d).toLowerCase().includes("without") ||
+      d.faltantes.length > 0;
+
+    return (
+      <li
+        key={i}
+        className={`border rounded-lg shadow-sm p-2 flex items-center gap-4 transition
+          ${tieneWithout ? "bg-red-100 border-red-400" : "hover:bg-gray-50"}
+        `}
+      >
+        <img
+          src={`${API_URL}${d.imagen}`}
+          alt="detección"
+          className="w-32 h-20 object-cover rounded"
+        />
+
+        <div>
+          <p className="text-sm text-gray-700">
+            <strong>🕒 Fecha:</strong> {d.timestamp}
+          </p>
+          <p className="text-sm text-gray-700">
+            <strong>🎥 Canal:</strong> {d.canal}
+          </p>
+
+          <p className="text-sm text-gray-700">
+            <strong>✅ Detectados:</strong>{" "}
+            {d.detectados.map((e) => EPP_LABELS[e] || e).join(", ") || "Ninguno"}
+          </p>
+
+          <p className={`text-sm font-semibold
+            ${tieneWithout ? "text-red-600" : "text-gray-700"}
+          `}>
+            <strong>⚠️ Faltantes:</strong>{" "}
+            {d.faltantes.length > 0
+              ? d.faltantes.map((e) => EPP_LABELS[e] || e).join(", ")
+              : "Ninguno"}
+          </p>
+
+          {tieneWithout && (
+            <p className="text-red-700 font-bold text-sm mt-1">
+              🚨 ALERTA: Persona sin EPP obligatorio
+            </p>
+          )}
+        </div>
+      </li>
+    );
+  })}
+</ul>
+
       )}
     </div>
   );
