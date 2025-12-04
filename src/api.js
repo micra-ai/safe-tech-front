@@ -105,33 +105,53 @@ export const listarVideos = () => fetchJSON("/videos");
 // ========= Auth =========
 
 // 🔐 LOGIN
-export const loginUser = ({ correo, password }) =>
-  fetchJSON("/auth/login", {
-    method: "POST",
-    body: JSON.stringify({
-      // Mandamos ambos campos para compatibilidad
-      correo,           // 👉 si el backend espera "correo"
-      email: correo,    // 👉 si el backend espera "email"
-      password,
-    }),
-    headers: { "Content-Type": "application/json" },
-  });
+export const loginUser = async ({ correo, password }) => {
+  console.log("▶️ Llamando a /auth/login", { correo });
+
+  try {
+    const res = await fetchJSON("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        correo,
+        email: correo,
+        password,
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    console.log("✅ Respuesta /auth/login:", res);
+    return res;
+  } catch (err) {
+    console.error("❌ Error en /auth/login:", err);
+    throw err;
+  }
+};
 
 // 🧾 REGISTRO
-export const registerUser = ({ nombre, correo, password }) =>
-  fetchJSON("/auth/register", {
-    method: "POST",
-    body: JSON.stringify({
-      // Igual: mandamos las dos variantes
-      nombre,           // 👉 si el backend espera "nombre"
-      name: nombre,     // 👉 si espera "name"
-      correo,           // 👉 variante 1
-      email: correo,    // 👉 variante 2
-      password,
-      rol: "user",      // valor por defecto razonable si el backend lo pide
-    }),
-    headers: { "Content-Type": "application/json" },
-  });
+export const registerUser = async ({ nombre, correo, password }) => {
+  console.log("▶️ Llamando a /auth/register", { nombre, correo });
+
+  try {
+    const res = await fetchJSON("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        nombre,
+        name: nombre,
+        correo,
+        email: correo,
+        password,
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    console.log("✅ Respuesta /auth/register:", res);
+    return res;
+  } catch (err) {
+    console.error("❌ Error en /auth/register:", err);
+    throw err;
+  }
+};
+
 
 
 export const getCurrentUser = () => fetchJSON("/auth/me");
