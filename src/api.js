@@ -103,19 +103,29 @@ export const subirYDetectarVideo = async (file) => {
 export const listarVideos = () => fetchJSON("/videos");
 
 // ========= Auth =========
-export const registerUser = (data) =>
-  fetchJSON("/auth/register", {
+// 🔐 LOGIN
+export const loginUser = ({ correo, password }) =>
+  fetchJSON("/auth/login", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      email: correo,   // 👈 el backend espera "email"
+      password,
+    }),
     headers: { "Content-Type": "application/json" },
   });
 
-export const loginUser = (data) =>
-  fetchJSON("/auth/login", {
+// 🧾 REGISTRO
+export const registerUser = ({ nombre, correo, password }) =>
+  fetchJSON("/auth/register", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      name: nombre,    // o "nombre" si tu backend lo usa así
+      email: correo,   // 👈 igual que en login
+      password,
+    }),
     headers: { "Content-Type": "application/json" },
   });
+
 
 export const getCurrentUser = () => fetchJSON("/auth/me");
 export const logoutUser     = () => fetchJSON("/auth/logout", { method: "POST" });
