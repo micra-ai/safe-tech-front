@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 
 const API_URL = "https://techsyncore.duckdns.org";
 
-// Normaliza cualquier ruta de frame a una URL válida
-function normalizarFrameUrl(frameUrl) {
+// 🔹 Normaliza cualquier ruta que venga del backend
+function normalizarBasePath(frameUrl) {
   if (!frameUrl) return "";
 
   let p = frameUrl;
 
-  // Si viene como objeto (por si acaso a futuro)
+  // Por si en el futuro viene como objeto
   if (typeof p === "object") {
     p = p.url || p.image || p.path || p.filename || "";
   }
@@ -18,16 +18,12 @@ function normalizarFrameUrl(frameUrl) {
     p = p.replace("/app", ""); // "/app/static/..." -> "/static/..."
   }
 
-  // Si por alguna razón aún viene con timelapse_frames, lo cambiamos
-  p = p.replace("timelapse_frames", "timelapse_processed");
-
-  // Asegurar que comienza con "/"
+  // Asegurar que parte con "/"
   if (!p.startsWith("/")) {
     p = "/" + p;
   }
 
-  // Resultado final
-  return `${API_URL}${p}`;
+  return p; // todavía sin API_URL
 }
 
 export default function Timelapse() {
@@ -117,18 +113,32 @@ export default function Timelapse() {
                   const idx = frameActual[canal] || 0;
                   const frameUrl = imagenes[canal][idx];
 
-                  const src = normalizarFrameUrl(frameUrl);
+                  // base normalizada (sin /app, siempre con /)
+                  const basePath = normalizarBasePath(frameUrl);
 
-                  console.log("Timelapse src =>", canal, src);
+                  // versión procesada (YOLO) y versión original
+                  const processedPath = basePath.replace(
+                    "timelapse_frames",
+                    "timelapse_processed"
+                  );
+                  const originalPath = basePath; // por si processed no existe
+
+                  const processedSrc = `${API_URL}${processedPath}`;
+                  const originalSrc = `${API_URL}${originalPath}`;
+
+                  console.log("Timelapse src =>", canal, processedSrc);
 
                   return (
                     <img
-                      src={src}
+                      src={processedSrc}
                       alt={`Frame ${idx}`}
                       className="rounded-lg shadow-md w-full object-cover"
                       onError={(e) => {
-                        console.error("Error cargando frame timelapse:", src);
-                        e.target.style.display = "none";
+                        console.error(
+                          "Error cargando frame timelapse procesado, usando original:",
+                          processedSrc
+                        );
+                        e.target.src = originalSrc;
                       }}
                     />
                   );
