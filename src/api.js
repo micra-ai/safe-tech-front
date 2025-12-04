@@ -1,8 +1,14 @@
 // ========= API base =========
-const API_URL = import.meta.env.VITE_API_URL || "https://techsyncore.duckdns.org";
-export default API_URL;   // 👈 export default para usar en Camaras.jsx
+// src/api.js
 
-console.log("🚀 API_URL en runtime:", API_URL);
+// Si VITE_API_URL no existe, usamos directamente el DuckDNS
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://techsyncore.duckdns.org";
+
+console.log("API_URL en runtime:", API_URL);
+
+export default API_URL;
+
 
 // ========= Helper para fetch =========
 async function fetchJSON(path, opts = {}) {
