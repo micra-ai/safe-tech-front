@@ -7,34 +7,37 @@ const API_URL = "https://techsyncore.duckdns.org";
 console.log("API_URL en runtime:", API_URL);
 
 export default API_URL;
-
-
 // ========= Helper para fetch =========
 async function fetchJSON(path, opts = {}) {
   console.log("👉 Llamando a:", `${API_URL}${path}`);
+
   const res = await fetch(`${API_URL}${path}`, {
     headers: { "Content-Type": "application/json" },
     ...opts,
   });
 
-  // Leer respuesta como texto para debug
   const text = await res.text();
 
-// Si la API devuelve vacío, null o HTML → no intentamos parsear
-if (!text || text.trim() === "" || text.startsWith("<")) {
-  console.warn("⚠ Respuesta vacía o no JSON, retornando null");
-  return null;
+  // Validaciones anti-error
+  if (
+    !text ||
+    text.trim() === "" ||
+    text === "undefined" ||
+    text === "null" ||
+    text.startsWith("<")
+  ) {
+    console.warn("⚠ Respuesta vacía o no JSON, retornando null");
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.error("❌ JSON inválido:", text);
+    return null;
+  }
 }
 
-// Intentamos parsear JSON real
-try {
-  return JSON.parse(text);
-} catch (err) {
-  console.error("❌ JSON inválido:", text);
-  return null; 
-}
-
-}
 
 // ========= Métricas =========
 export async function getDashboardMetrics() {
