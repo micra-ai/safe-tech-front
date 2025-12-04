@@ -141,11 +141,13 @@ export default function Detecciones() {
               >
                 {imgUrl && (
                   <img
-  src={`${API_URL}/static/timelapse_processed/${selectedChannel}/${selectedDate}/${currentFrame}`}
-  alt={`Frame ${currentIndex}`}
-  className="w-full h-auto object-contain rounded"
-/>
-
+                    src={imgUrl}
+                    alt="alerta de EPP"
+                    className="w-32 h-20 object-cover rounded"
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                    }}
+                  />
                 )}
 
                 <div>
