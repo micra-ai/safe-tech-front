@@ -2,6 +2,34 @@ import { useEffect, useState } from "react";
 
 const API_URL = "https://techsyncore.duckdns.org";
 
+// Normaliza cualquier ruta de frame a una URL válida
+function normalizarFrameUrl(frameUrl) {
+  if (!frameUrl) return "";
+
+  let p = frameUrl;
+
+  // Si viene como objeto (por si acaso a futuro)
+  if (typeof p === "object") {
+    p = p.url || p.image || p.path || p.filename || "";
+  }
+
+  // Sacar prefijo de filesystem
+  if (p.startsWith("/app/")) {
+    p = p.replace("/app", ""); // "/app/static/..." -> "/static/..."
+  }
+
+  // Si por alguna razón aún viene con timelapse_frames, lo cambiamos
+  p = p.replace("timelapse_frames", "timelapse_processed");
+
+  // Asegurar que comienza con "/"
+  if (!p.startsWith("/")) {
+    p = "/" + p;
+  }
+
+  // Resultado final
+  return `${API_URL}${p}`;
+}
+
 export default function Timelapse() {
   const canales = ["Channel1", "Channel2", "Channel3", "Channel4"];
   const [fechas, setFechas] = useState({});
@@ -16,7 +44,6 @@ export default function Timelapse() {
         .then((res) => res.json())
         .then((data) => {
           setFechas((prev) => ({ ...prev, [canal]: data || [] }));
-
         })
         .catch((err) => console.error(err));
     });
@@ -26,7 +53,9 @@ export default function Timelapse() {
   const handleSeleccionDia = (canal, fecha) => {
     setDiaSeleccionado((prev) => ({ ...prev, [canal]: fecha }));
     if (fecha) {
-      fetch(`${API_URL}/timelapse_detecciones/imagenes?canal=${canal}&fecha=${fecha}`)
+      fetch(
+        `${API_URL}/timelapse_detecciones/imagenes?canal=${canal}&fecha=${fecha}`
+      )
         .then((res) => res.json())
         .then((data) => {
           setImagenes((prev) => ({ ...prev, [canal]: data }));
@@ -83,40 +112,40 @@ export default function Timelapse() {
 
             {/* Timelapse */}
             {imagenes[canal] && imagenes[canal].length > 0 ? (
-  <div className="relative flex justify-center items-center">
+              <div className="relative flex justify-center items-center">
+                {(() => {
+                  const idx = frameActual[canal] || 0;
+                  const frameUrl = imagenes[canal][idx];
 
-    {/* Transformar URL original → URL procesada */}
-    {(() => {
-  const frameUrl = imagenes[canal][frameActual[canal] || 0];
+                  const src = normalizarFrameUrl(frameUrl);
 
-  // Fuerza a que SIEMPRE sea la versión procesada
-  const processedUrl = frameUrl.replace(
-    "timelapse_frames",
-    "timelapse_processed"
-  );
+                  console.log("Timelapse src =>", canal, src);
 
-  return (
-    <img
-      src={`${API_URL}${processedUrl}`}
-      alt={`Frame ${frameActual[canal]}`}
-      className="rounded-lg shadow-md w-full object-cover"
-    />
-  );
-})()}
+                  return (
+                    <img
+                      src={src}
+                      alt={`Frame ${idx}`}
+                      className="rounded-lg shadow-md w-full object-cover"
+                      onError={(e) => {
+                        console.error("Error cargando frame timelapse:", src);
+                        e.target.style.display = "none";
+                      }}
+                    />
+                  );
+                })()}
 
-
-    <p className="absolute bottom-2 right-3 text-xs bg-black bg-opacity-50 text-white px-2 py-1 rounded">
-      {frameActual[canal] + 1}/{imagenes[canal].length}
-    </p>
-  </div>
-) : (
-  <p className="text-gray-500 text-sm text-center">Selecciona un día.</p>
-)}
-
+                <p className="absolute bottom-2 right-3 text-xs bg-black bg-opacity-50 text-white px-2 py-1 rounded">
+                  {(frameActual[canal] || 0) + 1}/{imagenes[canal].length}
+                </p>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm text-center">
+                Selecciona un día.
+              </p>
+            )}
           </div>
         ))}
       </div>
     </div>
   );
 }
-
