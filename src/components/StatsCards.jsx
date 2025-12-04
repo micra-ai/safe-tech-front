@@ -146,7 +146,6 @@ export default function StatsCards() {
       </p>
     )}
   </div>
-</div>
 
         <div className="p-4">
           <button
