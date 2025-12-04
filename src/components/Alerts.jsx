@@ -96,7 +96,7 @@ export default function Detecciones() {
   return (
     <div className="bg-white p-4 rounded shadow my-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">🟢 Detecciones en tiempo casi real</h2>
+        <h2 className="text-xl font-bold">🚨 Alertas detectadas</h2>
         <span className="text-xs text-gray-500">
           Actualizando cada 3 segundos
         </span>
