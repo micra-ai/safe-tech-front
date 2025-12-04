@@ -20,14 +20,21 @@ async function fetchJSON(path, opts = {}) {
 
   // Leer respuesta como texto para debug
   const text = await res.text();
-  console.log("🔵 Body recibido:", text);
 
-  try {
-    return JSON.parse(text);
-  } catch {
-    console.error("❌ No es JSON válido");
-    throw new Error(text);
-  }
+// Si la API devuelve vacío, null o HTML → no intentamos parsear
+if (!text || text.trim() === "" || text.startsWith("<")) {
+  console.warn("⚠ Respuesta vacía o no JSON, retornando null");
+  return null;
+}
+
+// Intentamos parsear JSON real
+try {
+  return JSON.parse(text);
+} catch (err) {
+  console.error("❌ JSON inválido:", text);
+  return null; 
+}
+
 }
 
 // ========= Métricas =========
