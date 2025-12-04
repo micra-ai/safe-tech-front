@@ -1,9 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  getDashboardMetrics,
-  getEstadoDeteccion,
-  setEstadoDeteccion,
-} from "../api";
+import API_URL, { getEstadoDeteccion, setEstadoDeteccion } from "../api";
 
 // Diccionario de traducción
 const EPP_LABELS = {
@@ -14,13 +10,75 @@ const EPP_LABELS = {
   safety_overall: "Overol",
 };
 
+const ALERTS_URL = `${API_URL}/static/alertas_timelapse.json`;
+
+// Calcula métricas a partir del JSON de alertas
+function calcularMetricsDesdeAlertas(alertas) {
+  if (!Array.isArray(alertas) || alertas.length === 0) {
+    return {
+      incumplimientos_epp: 0,
+      porcentaje_cumplimiento: 100,
+      epp_mas_incumplidos: [],
+      ultimas: [],
+      imagenes_procesadas: 0,
+    };
+  }
+
+  const hoyStr = new Date().toISOString().slice(0, 10);
+  const alertasHoy = alertas.filter(
+    (a) => (a.fecha || "").startsWith(hoyStr)
+  );
+
+  const incumplimientos_epp = alertasHoy.length;
+  const imagenes_procesadas = alertasHoy.length; // aprox = frames con alerta
+
+  // Contar EPP faltantes
+  const contador = {};
+  for (const a of alertasHoy) {
+    const falt = Array.isArray(a.faltantes) ? a.faltantes : [];
+    for (const f of falt) {
+      contador[f] = (contador[f] || 0) + 1;
+    }
+  }
+
+  const epp_mas_incumplidos = Object.entries(contador).sort(
+    (a, b) => b[1] - a[1]
+  );
+
+  return {
+    incumplimientos_epp,
+    porcentaje_cumplimiento: 100, // si quieres lo usamos luego
+    epp_mas_incumplidos,
+    ultimas: alertasHoy.slice(-5),
+    imagenes_procesadas,
+  };
+}
+
 export default function StatsCards() {
   const [metrics, setMetrics] = useState({});
   const [activo, setActivo] = useState(false);
 
+  const cargarMetrics = async () => {
+    try {
+      const res = await fetch(ALERTS_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setMetrics(calcularMetricsDesdeAlertas(data));
+    } catch (err) {
+      console.error("Error cargando métricas desde alertas:", err);
+      setMetrics({
+        incumplimientos_epp: 0,
+        porcentaje_cumplimiento: 100,
+        epp_mas_incumplidos: [],
+        ultimas: [],
+        imagenes_procesadas: 0,
+      });
+    }
+  };
+
   // Cargar métricas y estado al inicio
   useEffect(() => {
-    getDashboardMetrics().then(setMetrics);
+    cargarMetrics();
     getEstadoDeteccion().then((res) => setActivo(res.activo));
   }, []);
 
@@ -29,7 +87,7 @@ export default function StatsCards() {
     let interval;
     if (activo) {
       interval = setInterval(() => {
-        getDashboardMetrics().then(setMetrics);
+        cargarMetrics();
       }, 5000);
     }
     return () => clearInterval(interval);
@@ -49,12 +107,12 @@ export default function StatsCards() {
       porcentaje_cumplimiento: 100,
       epp_mas_incumplidos: [],
       ultimas: [],
+      imagenes_procesadas: 0,
     });
   };
 
   return (
     <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(250px,1fr))]">
-
       {/* Tarjeta 1: Faltantes más comunes */}
       <div className="bg-white shadow rounded-lg">
         <div className="bg-[#112d5a] text-white px-4 py-2 rounded-t-lg flex items-center gap-2">
@@ -69,7 +127,9 @@ export default function StatsCards() {
               </div>
             ))
           ) : (
-            <p className="text-sm text-gray-500">Sin incumplimientos registrados</p>
+            <p className="text-sm text-gray-500">
+              Sin incumplimientos registrados
+            </p>
           )}
         </div>
         <div className="p-4">
@@ -82,6 +142,14 @@ export default function StatsCards() {
             }`}
           >
             {activo ? "Detener detección" : "Iniciar detección"}
+          </button>
+
+          {/* Botón opcional para limpiar métricas visuales */}
+          <button
+            onClick={reiniciarMetricas}
+            className="mt-2 px-4 py-2 rounded border border-gray-300 text-xs w-full text-gray-600 hover:bg-gray-50"
+          >
+            Reiniciar métricas locales
           </button>
         </div>
       </div>
@@ -96,11 +164,13 @@ export default function StatsCards() {
           <p className="text-4xl font-bold text-red-700 mt-2">
             {metrics?.incumplimientos_epp ?? "-"}
           </p>
-          <p className="text-xs text-gray-500 mt-1">Total de incumplimientos hoy</p>
+          <p className="text-xs text-gray-500 mt-1">
+            Total de incumplimientos hoy
+          </p>
         </div>
       </div>
 
-            {/* Tarjeta 3: Imágenes procesadas */}
+      {/* Tarjeta 3: Imágenes procesadas */}
       <div className="bg-white shadow rounded-lg">
         <div className="bg-blue-100 text-blue-700 px-4 py-2 rounded-t-lg flex items-center gap-2">
           <span>📸</span>
@@ -115,8 +185,6 @@ export default function StatsCards() {
           </p>
         </div>
       </div>
-
-
     </div>
   );
 }
