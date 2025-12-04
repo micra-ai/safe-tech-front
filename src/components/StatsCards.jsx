@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import API_URL, { getEstadoDeteccion, setEstadoDeteccion } from "../api";
+import API_URL from "../api";
 
 // Diccionario de traducción
 const EPP_LABELS = {
@@ -47,7 +47,7 @@ function calcularMetricsDesdeAlertas(alertas) {
 
   return {
     incumplimientos_epp,
-    porcentaje_cumplimiento: 100, // si quieres lo usamos luego
+    porcentaje_cumplimiento: 100,
     epp_mas_incumplidos,
     ultimas: alertasHoy.slice(-5),
     imagenes_procesadas,
@@ -56,7 +56,6 @@ function calcularMetricsDesdeAlertas(alertas) {
 
 export default function StatsCards() {
   const [metrics, setMetrics] = useState({});
-  const [activo, setActivo] = useState(false);
 
   const cargarMetrics = async () => {
     try {
@@ -76,31 +75,20 @@ export default function StatsCards() {
     }
   };
 
-  // Cargar métricas y estado al inicio
+  // Cargar métricas al inicio
   useEffect(() => {
     cargarMetrics();
-    getEstadoDeteccion().then((res) => setActivo(res.activo));
   }, []);
 
-  // Refrescar métricas cada 5s si está activo
+  // Refrescar métricas cada 5s (detección automática)
   useEffect(() => {
-    let interval;
-    if (activo) {
-      interval = setInterval(() => {
-        cargarMetrics();
-      }, 5000);
-    }
+    const interval = setInterval(() => {
+      cargarMetrics();
+    }, 5000);
     return () => clearInterval(interval);
-  }, [activo]);
+  }, []);
 
-  // Cambiar estado remoto de detección
-  const manejarDeteccion = () => {
-    setEstadoDeteccion(!activo).then((res) => {
-      setActivo(res.estado.activo);
-    });
-  };
-
-  // Reiniciar métricas en frontend
+  // Reiniciar métricas en frontend (solo visual)
   const reiniciarMetricas = () => {
     setMetrics({
       incumplimientos_epp: 0,
@@ -133,18 +121,6 @@ export default function StatsCards() {
           )}
         </div>
         <div className="p-4">
-          <button
-            onClick={manejarDeteccion}
-            className={`mt-2 px-4 py-2 rounded text-white w-full ${
-              activo
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-green-600 hover:bg-green-700"
-            }`}
-          >
-            {activo ? "Detener detección" : "Iniciar detección"}
-          </button>
-
-          {/* Botón opcional para limpiar métricas visuales */}
           <button
             onClick={reiniciarMetricas}
             className="mt-2 px-4 py-2 rounded border border-gray-300 text-xs w-full text-gray-600 hover:bg-gray-50"
