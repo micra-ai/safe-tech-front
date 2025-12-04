@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import API_URL from "../api";
 
-// Mapeo a español para las etiquetas actuales del backend
+// Mapeo de las etiquetas que viene del backend
 const EPP_LABELS = {
   with_helmet: "Con casco",
   without_helmet: "Sin casco",
@@ -22,24 +22,21 @@ export default function Detecciones() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
-  // Ajusta ESTA ruta al endpoint que te devuelve exactamente
-  // el JSON que mostraste en la captura
-  const ENDPOINT = `${API_URL}/detecciones/timelapse?limit=500`;
-  // si tu endpoint real es otro (por ej. /timelapse_processed),
-  // solo cambia esa parte.
+  // 👇 PON AQUÍ EL ENDPOINT QUE TE MUESTRA ESE JSON
+  // Ejemplo: https://techsyncore.duckdns.org/timelapse_detecciones?limit=500
+  const ENDPOINT = `${API_URL}/timelapse_detecciones?limit=500`;
 
-  // Normalizar la ruta de imagen: /app/static/...  ->  https://host/static/...
+  // Normaliza "/app/static/..." → "https://tu-host/static/..."
   const normalizarRutaImagen = (ruta) => {
     if (!ruta) return null;
-
     let r = ruta;
-    // quitar prefijo /app si viene desde el filesystem
+
     if (r.startsWith("/app/")) {
-      r = r.replace("/app", "");
+      r = r.replace("/app", ""); // "/app/static/..." -> "/static/..."
     }
-    // asegurar que empiece con /static
+    // si ya empieza en /static, perfecto
     if (!r.startsWith("/static")) {
-      // por seguridad, si viniera otra cosa rara
+      // por si en el futuro cambias el backend
       return `${API_URL}${r}`;
     }
     return `${API_URL}${r}`;
@@ -57,17 +54,18 @@ export default function Detecciones() {
         }
 
         const data = await res.json();
+
         if (!Array.isArray(data)) {
-          throw new Error("Respuesta inválida del backend");
+          throw new Error("Respuesta inválida del backend (no es un array)");
         }
 
-        // Ordenar por timestamp descendente (últimas primero)
+        // Ordenar por timestamp desc y limitar
         const ordenadas = [...data].sort(
           (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
         );
 
         if (!cancelado) {
-          setDetecciones(ordenadas.slice(0, 50)); // últimas 50
+          setDetecciones(ordenadas.slice(0, 50));
           setCargando(false);
           setError(null);
         }
@@ -80,9 +78,8 @@ export default function Detecciones() {
       }
     };
 
-    // primera carga + polling cada 3 segundos
     fetchDetecciones();
-    const id = setInterval(fetchDetecciones, 3000);
+    const id = setInterval(fetchDetecciones, 3000); // polling cada 3 s
 
     return () => {
       cancelado = true;
@@ -99,9 +96,7 @@ export default function Detecciones() {
         </span>
       </div>
 
-      {cargando && (
-        <p className="text-gray-500">Cargando detecciones...</p>
-      )}
+      {cargando && <p className="text-gray-500">Cargando detecciones...</p>}
 
       {error && (
         <p className="text-red-600 text-sm mb-2">
@@ -142,7 +137,6 @@ export default function Detecciones() {
                     alt="detección"
                     className="w-32 h-20 object-cover rounded"
                     onError={(e) => {
-                      // por si alguna ruta viene mala, no revienta el layout
                       e.target.style.display = "none";
                     }}
                   />
@@ -159,9 +153,7 @@ export default function Detecciones() {
                   <p className="text-sm text-gray-700">
                     <strong>✅ Detectados:</strong>{" "}
                     {detectados.length > 0
-                      ? detectados
-                          .map((e) => EPP_LABELS[e] || e)
-                          .join(", ")
+                      ? detectados.map((e) => EPP_LABELS[e] || e).join(", ")
                       : "Ninguno"}
                   </p>
 
@@ -172,9 +164,7 @@ export default function Detecciones() {
                   >
                     <strong>⚠️ Faltantes:</strong>{" "}
                     {faltantes.length > 0
-                      ? faltantes
-                          .map((e) => EPP_LABELS[e] || e)
-                          .join(", ")
+                      ? faltantes.map((e) => EPP_LABELS[e] || e).join(", ")
                       : "Ninguno"}
                   </p>
 
