@@ -55,17 +55,30 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   // Restaurar sesión desde localStorage
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setLoading(false);
-  }, []);
+  // Restaurar sesión desde localStorage
+useEffect(() => {
+  try {
+    const raw = localStorage.getItem("user");
 
-  if (loading) {
-    return <div className="p-6">Cargando...</div>;
+    // Si no existe o está corrupto, limpiamos
+    if (!raw || raw === "undefined" || raw === "null") {
+      localStorage.removeItem("user");
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    // Intentamos convertirlo a objeto
+    const parsed = JSON.parse(raw);
+    setUser(parsed);
+  } catch (err) {
+    console.error("❌ Error parseando sesión guardada:", err);
+    localStorage.removeItem("user");
+    setUser(null);
   }
+
+  setLoading(false);
+}, []);
 
   return (
     <div className="flex min-h-screen bg-gray-100">
