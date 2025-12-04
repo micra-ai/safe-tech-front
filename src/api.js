@@ -2,8 +2,7 @@
 // src/api.js
 
 // Si VITE_API_URL no existe, usamos directamente el DuckDNS
-const API_URL =
-  import.meta.env.VITE_API_URL || "https://techsyncore.duckdns.org";
+const API_URL = "https://techsyncore.duckdns.org";
 
 console.log("API_URL en runtime:", API_URL);
 
