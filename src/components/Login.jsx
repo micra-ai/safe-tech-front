@@ -39,64 +39,61 @@ export default function Login({ onLogin }) {
   }, [onLogin, navigate]);
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
+    e.preventDefault();
+    setError("");
 
-  try {
-    if (mode === "login") {
-      // ===== LOGIN =====
-      const res = await loginUser({ correo, password });
+    try {
+      if (mode === "login") {
+        // ===== LOGIN =====
+        const res = await loginUser({ correo, password });
 
-      // Normalizamos la respuesta:
-      const user =
-        res?.user ||   // { user: {...} }
-        res?.data ||   // { data: {...} }
-        res;           // { ...usuario }
+        if (!res || !res.user) {
+          throw new Error("Respuesta inválida del servidor");
+        }
 
-      if (!user) {
-        throw new Error("Respuesta inválida del servidor");
-      }
+        // ✅ guardar sesión completa
+        localStorage.setItem("user", JSON.stringify(res.user));
 
-      localStorage.setItem("user", JSON.stringify(user));
-
-      if (remember) {
-        localStorage.setItem("remember_email", correo);
-      } else {
-        localStorage.removeItem("remember_email");
-      }
-
-      onLogin(user);
-      navigate("/");
-
-    } else {
-      // ===== REGISTRO =====
-      const res = await registerUser({ nombre, correo, password });
-
-      const user =
-        res?.user ||
-        res?.data ||
-        res; // si el backend devuelve el usuario plano al registrar
-
-      if (user) {
-        localStorage.setItem("user", JSON.stringify(user));
+        // ✅ recordar o no el correo
         if (remember) {
           localStorage.setItem("remember_email", correo);
         } else {
           localStorage.removeItem("remember_email");
         }
-        onLogin(user);
+
+        onLogin(res.user);
         navigate("/");
       } else {
-        alert("Usuario registrado correctamente. Ahora puedes iniciar sesión.");
-        setMode("login");
-      }
-    }
-  } catch (err) {
-    console.error(err);
-    setError("Error en las credenciales o en los datos enviados.");
-  }
-};
+        // ===== REGISTRO =====
+        const res = await registerUser({ nombre, correo, password });
 
+        // Si tu backend devuelve el usuario al registrar,
+        // lo usamos para dejar sesión iniciada.
+        if (res && res.user) {
+          localStorage.setItem("user", JSON.stringify(res.user));
+          if (remember) {
+            localStorage.setItem("remember_email", correo);
+          } else {
+            localStorage.removeItem("remember_email");
+          }
+          onLogin(res.user);
+          navigate("/");
+        } else {
+          // Si no devuelve user, seguimos con flujo clásico
+          alert("Usuario registrado correctamente. Ahora puedes iniciar sesión.");
+          setMode("login");
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Error en las credenciales o en los datos enviados.");
+    }
+  };
+
+  const toggleMode = () => {
+    setMode((prev) => (prev === "login" ? "register" : "login"));
+    setError("");
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
