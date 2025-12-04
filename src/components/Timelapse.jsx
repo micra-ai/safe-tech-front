@@ -34,16 +34,31 @@ export default function Timelapse() {
   const [frameActual, setFrameActual] = useState({});
 
   // Obtener días disponibles por canal
-  useEffect(() => {
-    canales.forEach((canal) => {
-      fetch(`${API_URL}/timelapse_detecciones/dias?canal=${canal}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setFechas((prev) => ({ ...prev, [canal]: data || [] }));
-        })
-        .catch((err) => console.error(err));
-    });
-  }, []);
+  // Obtener días disponibles por canal
+useEffect(() => {
+  canales.forEach((canal) => {
+    fetch(`${API_URL}/timelapse_detecciones/dias?canal=${canal}`)
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Días crudos desde backend ->", canal, data);
+
+        // data puede ser:
+        // - array de strings ["2025-12-03", ...]
+        // - array de objetos [{ fecha: "2025-12-03", ...}, ...]
+        const fechasUnicas = Array.from(
+          new Set(
+            (data || []).map((item) =>
+              typeof item === "string" ? item : item.fecha
+            )
+          )
+        );
+
+        setFechas((prev) => ({ ...prev, [canal]: fechasUnicas }));
+      })
+      .catch((err) => console.error(err));
+  });
+}, []);
+
 
   // Cargar imágenes de la fecha seleccionada
   const handleSeleccionDia = (canal, fecha) => {
