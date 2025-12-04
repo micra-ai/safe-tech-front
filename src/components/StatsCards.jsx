@@ -128,23 +128,26 @@ export default function StatsCards() {
     <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(250px,1fr))]">
       {/* Tarjeta 1: Faltantes más comunes */}
       <div className="bg-white shadow rounded-lg">
-        <div className="bg-[#112d5a] text-white px-4 py-2 rounded-t-lg flex items-center gap-2">
-          <span>📋</span>
-          <h3 className="text-sm font-semibold">Faltantes más comunes</h3>
+  <div className="bg-[#112d5a] text-white px-4 py-2 rounded-t-lg flex items-center gap-2">
+    <span>📋</span>
+    <h3 className="text-sm font-semibold">Faltantes más comunes</h3>
+  </div>
+
+  <div className="p-4 space-y-1">
+    {metrics?.epp_mas_incumplidos?.length > 0 ? (
+      metrics.epp_mas_incumplidos.slice(0, 5).map(([epp, cantidad], idx) => (
+        <div key={idx} className="text-sm text-[#112d5a]">
+          • {EPP_LABELS[epp] || epp} ({cantidad})
         </div>
-        <div className="p-4 space-y-1">
-          {metrics?.epp_mas_incumplidos?.length > 0 ? (
-            metrics.epp_mas_incumplidos.slice(0, 5).map(([epp, cantidad], idx) => (
-              <div key={idx} className="text-sm text-[#112d5a]">
-                • {EPP_LABELS[epp] || epp} ({cantidad})
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-gray-500">
-              Sin incumplimientos registrados
-            </p>
-          )}
-        </div>
+      ))
+    ) : (
+      <p className="text-sm text-gray-500">
+        Sin incumplimientos registrados
+      </p>
+    )}
+  </div>
+</div>
+
         <div className="p-4">
           <button
             onClick={reiniciarMetricas}
