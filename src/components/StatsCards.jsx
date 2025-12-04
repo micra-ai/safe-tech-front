@@ -2,13 +2,27 @@ import { useEffect, useState } from "react";
 import API_URL from "../api";
 
 // Diccionario de traducción
+// Diccionario final para clases YOLO exactas
 const EPP_LABELS = {
-  helmet: "Casco",
-  safety_vest: "Chaleco Reflectante",
-  safety_jacket: "Chaqueta de Seguridad",
-  safety_shoes: "Zapatos de Seguridad",
-  safety_overall: "Overol",
+  with_helmet: "Con casco",
+  without_helmet: "Sin casco",
+
+  with_safety_vest: "Con chaleco reflectante",
+  without_safety_vest: "Sin chaleco reflectante",
+
+  with_glasses: "Con lentes de seguridad",
+  without_glasses: "Sin lentes de seguridad",
+
+  with_gloves: "Con guantes",
+  without_gloves: "Sin guantes",
+
+  with_shoes: "Con zapatos de seguridad",
+  without_shoes: "Sin zapatos de seguridad",
+
+  with_overall: "Con overol",
+  without_overall: "Sin overol",
 };
+
 
 const ALERTS_URL = `${API_URL}/static/alertas_timelapse.json`;
 
@@ -25,12 +39,23 @@ function calcularMetricsDesdeAlertas(alertas) {
   }
 
   const hoyStr = new Date().toISOString().slice(0, 10);
-  const alertasHoy = alertas.filter(
-    (a) => (a.fecha || "").startsWith(hoyStr)
-  );
+
+  // 🔴 ANTES
+  // const alertasHoy = alertas.filter(
+  //   (a) => (a.fecha || "").startsWith(hoyStr)
+  // );
+
+  // 🟢 DESPUÉS: usamos timestamp como criterio principal
+  const alertasHoy = alertas.filter((a) => {
+    const ts = (a.timestamp || "").slice(0, 10);
+    const f = (a.fecha || "").slice(0, 10);
+    return ts === hoyStr || f === hoyStr;
+  });
 
   const incumplimientos_epp = alertasHoy.length;
-  const imagenes_procesadas = alertasHoy.length; // aprox = frames con alerta
+  const imagenes_procesadas = alertasHoy.length;
+  // ... resto igual
+
 
   // Contar EPP faltantes
   const contador = {};
