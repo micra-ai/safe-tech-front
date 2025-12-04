@@ -20,7 +20,7 @@ export default function Detecciones() {
 
     const fetchDetecciones = async () => {
       try {
-        const res = await fetch(`${API_URL}/detecciones/timelapse?limit=500`);
+        const res = await fetch(`${API_URL}/detecciones_timelapse?limit=500`);
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
