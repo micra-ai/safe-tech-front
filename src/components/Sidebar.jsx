@@ -33,7 +33,7 @@ export default function Sidebar({ user, onLogout }) {
       <div className="flex items-center justify-center mb-8">
         <div className="bg-white rounded-lg p-3 shadow-md">
           <img
-            src="/Logo_Syncore_Horizontal_color.png"
+            src="/logo-syncore.png"
             alt="Logo"
             className="w-40"
           />
