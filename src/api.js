@@ -103,12 +103,15 @@ export const subirYDetectarVideo = async (file) => {
 export const listarVideos = () => fetchJSON("/videos");
 
 // ========= Auth =========
+
 // 🔐 LOGIN
 export const loginUser = ({ correo, password }) =>
   fetchJSON("/auth/login", {
     method: "POST",
     body: JSON.stringify({
-      email: correo,   // 👈 el backend espera "email"
+      // Mandamos ambos campos para compatibilidad
+      correo,           // 👉 si el backend espera "correo"
+      email: correo,    // 👉 si el backend espera "email"
       password,
     }),
     headers: { "Content-Type": "application/json" },
@@ -119,9 +122,13 @@ export const registerUser = ({ nombre, correo, password }) =>
   fetchJSON("/auth/register", {
     method: "POST",
     body: JSON.stringify({
-      name: nombre,    // o "nombre" si tu backend lo usa así
-      email: correo,   // 👈 igual que en login
+      // Igual: mandamos las dos variantes
+      nombre,           // 👉 si el backend espera "nombre"
+      name: nombre,     // 👉 si espera "name"
+      correo,           // 👉 variante 1
+      email: correo,    // 👉 variante 2
       password,
+      rol: "user",      // valor por defecto razonable si el backend lo pide
     }),
     headers: { "Content-Type": "application/json" },
   });
