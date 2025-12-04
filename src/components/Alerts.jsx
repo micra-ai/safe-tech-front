@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import API_URL from "../api";
 
-// Mapeo de las etiquetas que viene del backend
+// Mapeo de las clases YOLO a texto legible
 const EPP_LABELS = {
   with_helmet: "Con casco",
   without_helmet: "Sin casco",
@@ -17,37 +17,40 @@ const EPP_LABELS = {
   without_overall: "Sin overol",
 };
 
+// URL del JSON generado por el watcher
+const ALERTS_URL = `${API_URL}/static/alertas_timelapse.json`;
+
+// Normaliza la ruta de imagen: "/app/static/..." -> "https://host/static/..."
+function normalizarRutaImagen(rawPath) {
+  if (!rawPath) return null;
+
+  let p = rawPath;
+
+  // Si viene con prefijo de filesystem
+  if (p.startsWith("/app/")) {
+    p = p.replace("/app", ""); // "/app/static/..." -> "/static/..."
+  }
+
+  if (!p.startsWith("/")) {
+    p = "/" + p;
+  }
+
+  return `${API_URL}${p}`;
+}
+
 export default function Detecciones() {
-  const [detecciones, setDetecciones] = useState([]);
+  const [alertas, setAlertas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
-
-  // 👇 PON AQUÍ EL ENDPOINT QUE TE MUESTRA ESE JSON
-  // Ejemplo: https://techsyncore.duckdns.org/timelapse_detecciones?limit=500
-  const ENDPOINT = `${API_URL}/timelapse_detecciones?limit=500`;
-
-  // Normaliza "/app/static/..." → "https://tu-host/static/..."
-  const normalizarRutaImagen = (ruta) => {
-    if (!ruta) return null;
-    let r = ruta;
-
-    if (r.startsWith("/app/")) {
-      r = r.replace("/app", ""); // "/app/static/..." -> "/static/..."
-    }
-    // si ya empieza en /static, perfecto
-    if (!r.startsWith("/static")) {
-      // por si en el futuro cambias el backend
-      return `${API_URL}${r}`;
-    }
-    return `${API_URL}${r}`;
-  };
 
   useEffect(() => {
     let cancelado = false;
 
-    const fetchDetecciones = async () => {
+    const cargarAlertas = async () => {
       try {
-        const res = await fetch(ENDPOINT);
+        const res = await fetch(ALERTS_URL, {
+          cache: "no-store",
+        });
 
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
@@ -56,21 +59,21 @@ export default function Detecciones() {
         const data = await res.json();
 
         if (!Array.isArray(data)) {
-          throw new Error("Respuesta inválida del backend (no es un array)");
+          throw new Error("El JSON de alertas no es un array");
         }
 
-        // Ordenar por timestamp desc y limitar
+        // Ordenar por timestamp descendente y limitar
         const ordenadas = [...data].sort(
           (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
         );
 
         if (!cancelado) {
-          setDetecciones(ordenadas.slice(0, 50));
+          setAlertas(ordenadas.slice(0, 100)); // últimas 100 alertas
           setCargando(false);
           setError(null);
         }
       } catch (err) {
-        console.error("Error al cargar detecciones:", err);
+        console.error("Error cargando alertas:", err);
         if (!cancelado) {
           setError("No se pudieron cargar las detecciones.");
           setCargando(false);
@@ -78,14 +81,17 @@ export default function Detecciones() {
       }
     };
 
-    fetchDetecciones();
-    const id = setInterval(fetchDetecciones, 3000); // polling cada 3 s
+    // Primera carga
+    cargarAlertas();
+
+    // Polling cada 3 segundos (casi tiempo real)
+    const id = setInterval(cargarAlertas, 3000);
 
     return () => {
       cancelado = true;
       clearInterval(id);
     };
-  }, [ENDPOINT]);
+  }, []);
 
   return (
     <div className="bg-white p-4 rounded shadow my-4">
@@ -96,7 +102,9 @@ export default function Detecciones() {
         </span>
       </div>
 
-      {cargando && <p className="text-gray-500">Cargando detecciones...</p>}
+      {cargando && (
+        <p className="text-gray-500">Cargando detecciones...</p>
+      )}
 
       {error && (
         <p className="text-red-600 text-sm mb-2">
@@ -104,17 +112,17 @@ export default function Detecciones() {
         </p>
       )}
 
-      {!cargando && !error && detecciones.length === 0 && (
+      {!cargando && !error && alertas.length === 0 && (
         <p className="text-gray-500">
-          No hay detecciones todavía. Cuando el sistema genere alertas, aparecerán aquí.
+          No hay alertas registradas todavía.
         </p>
       )}
 
-      {detecciones.length > 0 && (
+      {alertas.length > 0 && (
         <ul className="space-y-4 max-h-[70vh] overflow-y-auto transition-all duration-500">
-          {detecciones.map((d, i) => {
-            const detectados = Array.isArray(d.detectados) ? d.detectados : [];
-            const faltantes = Array.isArray(d.faltantes) ? d.faltantes : [];
+          {alertas.map((a, i) => {
+            const detectados = Array.isArray(a.detectados) ? a.detectados : [];
+            const faltantes = Array.isArray(a.faltantes) ? a.faltantes : [];
 
             const tieneWithout =
               faltantes.length > 0 ||
@@ -122,19 +130,19 @@ export default function Detecciones() {
                 String(e).toLowerCase().includes("without")
               );
 
-            const imageUrl = normalizarRutaImagen(d.image);
+            const imgUrl = normalizarRutaImagen(a.image);
 
             return (
               <li
-                key={`${d.timestamp}-${d.canal}-${i}`}
+                key={`${a.timestamp}-${a.canal}-${i}`}
                 className={`border rounded-lg shadow-sm p-2 flex items-center gap-4 transition
                   ${tieneWithout ? "bg-red-100 border-red-400" : "hover:bg-gray-50"}
                 `}
               >
-                {imageUrl && (
+                {imgUrl && (
                   <img
-                    src={imageUrl}
-                    alt="detección"
+                    src={imgUrl}
+                    alt="alerta de EPP"
                     className="w-32 h-20 object-cover rounded"
                     onError={(e) => {
                       e.target.style.display = "none";
@@ -144,16 +152,18 @@ export default function Detecciones() {
 
                 <div>
                   <p className="text-sm text-gray-700">
-                    <strong>🕒 Fecha:</strong> {d.fecha} ({d.timestamp})
+                    <strong>🕒 Fecha:</strong> {a.fecha} ({a.timestamp})
                   </p>
                   <p className="text-sm text-gray-700">
-                    <strong>🎥 Canal:</strong> {d.canal}
+                    <strong>🎥 Canal:</strong> {a.canal}
                   </p>
 
                   <p className="text-sm text-gray-700">
                     <strong>✅ Detectados:</strong>{" "}
                     {detectados.length > 0
-                      ? detectados.map((e) => EPP_LABELS[e] || e).join(", ")
+                      ? detectados
+                          .map((e) => EPP_LABELS[e] || e)
+                          .join(", ")
                       : "Ninguno"}
                   </p>
 
@@ -164,7 +174,9 @@ export default function Detecciones() {
                   >
                     <strong>⚠️ Faltantes:</strong>{" "}
                     {faltantes.length > 0
-                      ? faltantes.map((e) => EPP_LABELS[e] || e).join(", ")
+                      ? faltantes
+                          .map((e) => EPP_LABELS[e] || e)
+                          .join(", ")
                       : "Ninguno"}
                   </p>
 
