@@ -1,40 +1,73 @@
 import { useEffect, useState } from "react";
 import API_URL from "../api";
 
+// Mapeo a español para las etiquetas actuales del backend
 const EPP_LABELS = {
-  helmet: "Casco",
-  safety_vest: "Chaleco Reflectante",
-  safety_jacket: "Chaqueta de Seguridad",
-  safety_shoes: "Zapatos de Seguridad",
-  safety_overall: "Overol",
+  with_helmet: "Con casco",
+  without_helmet: "Sin casco",
+  with_safety_vest: "Con chaleco reflectante",
+  without_safety_vest: "Sin chaleco reflectante",
+  with_gloves: "Con guantes",
+  without_gloves: "Sin guantes",
+  with_glasses: "Con lentes de seguridad",
+  without_glasses: "Sin lentes de seguridad",
+  with_shoes: "Con zapatos de seguridad",
+  without_shoes: "Sin zapatos de seguridad",
+  with_overall: "Con overol",
+  without_overall: "Sin overol",
 };
 
 export default function Detecciones() {
-  const [visibles, setVisibles] = useState([]);
+  const [detecciones, setDetecciones] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
+  // Ajusta ESTA ruta al endpoint que te devuelve exactamente
+  // el JSON que mostraste en la captura
+  const ENDPOINT = `${API_URL}/detecciones/timelapse?limit=500`;
+  // si tu endpoint real es otro (por ej. /timelapse_processed),
+  // solo cambia esa parte.
+
+  // Normalizar la ruta de imagen: /app/static/...  ->  https://host/static/...
+  const normalizarRutaImagen = (ruta) => {
+    if (!ruta) return null;
+
+    let r = ruta;
+    // quitar prefijo /app si viene desde el filesystem
+    if (r.startsWith("/app/")) {
+      r = r.replace("/app", "");
+    }
+    // asegurar que empiece con /static
+    if (!r.startsWith("/static")) {
+      // por seguridad, si viniera otra cosa rara
+      return `${API_URL}${r}`;
+    }
+    return `${API_URL}${r}`;
+  };
+
   useEffect(() => {
     let cancelado = false;
-    let intervalId = null;
 
     const fetchDetecciones = async () => {
       try {
-        const res = await fetch(`${API_URL}/detecciones_timelapse?limit=500`);
+        const res = await fetch(ENDPOINT);
+
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
-        const data = await res.json();
 
+        const data = await res.json();
         if (!Array.isArray(data)) {
           throw new Error("Respuesta inválida del backend");
         }
 
-        // Orden cronológico y últimas 50
-        const ordenadas = [...data].reverse().slice(0, 50);
+        // Ordenar por timestamp descendente (últimas primero)
+        const ordenadas = [...data].sort(
+          (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+        );
 
         if (!cancelado) {
-          setVisibles(ordenadas);
+          setDetecciones(ordenadas.slice(0, 50)); // últimas 50
           setCargando(false);
           setError(null);
         }
@@ -47,17 +80,15 @@ export default function Detecciones() {
       }
     };
 
-    // Primera carga
+    // primera carga + polling cada 3 segundos
     fetchDetecciones();
-
-    // Polling cada 3 segundos
-    intervalId = setInterval(fetchDetecciones, 3000);
+    const id = setInterval(fetchDetecciones, 3000);
 
     return () => {
       cancelado = true;
-      if (intervalId) clearInterval(intervalId);
+      clearInterval(id);
     };
-  }, []);
+  }, [ENDPOINT]);
 
   return (
     <div className="bg-white p-4 rounded shadow my-4">
@@ -78,18 +109,25 @@ export default function Detecciones() {
         </p>
       )}
 
-      {!cargando && !error && visibles.length === 0 && (
+      {!cargando && !error && detecciones.length === 0 && (
         <p className="text-gray-500">
           No hay detecciones todavía. Cuando el sistema genere alertas, aparecerán aquí.
         </p>
       )}
 
-      {visibles.length > 0 && (
+      {detecciones.length > 0 && (
         <ul className="space-y-4 max-h-[70vh] overflow-y-auto transition-all duration-500">
-          {visibles.map((d, i) => {
+          {detecciones.map((d, i) => {
+            const detectados = Array.isArray(d.detectados) ? d.detectados : [];
+            const faltantes = Array.isArray(d.faltantes) ? d.faltantes : [];
+
             const tieneWithout =
-              JSON.stringify(d).toLowerCase().includes("without") ||
-              (Array.isArray(d.faltantes) && d.faltantes.length > 0);
+              faltantes.length > 0 ||
+              [...detectados, ...faltantes].some((e) =>
+                String(e).toLowerCase().includes("without")
+              );
+
+            const imageUrl = normalizarRutaImagen(d.image);
 
             return (
               <li
@@ -98,15 +136,21 @@ export default function Detecciones() {
                   ${tieneWithout ? "bg-red-100 border-red-400" : "hover:bg-gray-50"}
                 `}
               >
-                <img
-                  src={`${API_URL}${d.imagen}`}
-                  alt="detección"
-                  className="w-32 h-20 object-cover rounded"
-                />
+                {imageUrl && (
+                  <img
+                    src={imageUrl}
+                    alt="detección"
+                    className="w-32 h-20 object-cover rounded"
+                    onError={(e) => {
+                      // por si alguna ruta viene mala, no revienta el layout
+                      e.target.style.display = "none";
+                    }}
+                  />
+                )}
 
                 <div>
                   <p className="text-sm text-gray-700">
-                    <strong>🕒 Fecha:</strong> {d.timestamp}
+                    <strong>🕒 Fecha:</strong> {d.fecha} ({d.timestamp})
                   </p>
                   <p className="text-sm text-gray-700">
                     <strong>🎥 Canal:</strong> {d.canal}
@@ -114,8 +158,8 @@ export default function Detecciones() {
 
                   <p className="text-sm text-gray-700">
                     <strong>✅ Detectados:</strong>{" "}
-                    {Array.isArray(d.detectados) && d.detectados.length > 0
-                      ? d.detectados
+                    {detectados.length > 0
+                      ? detectados
                           .map((e) => EPP_LABELS[e] || e)
                           .join(", ")
                       : "Ninguno"}
@@ -127,8 +171,8 @@ export default function Detecciones() {
                     }`}
                   >
                     <strong>⚠️ Faltantes:</strong>{" "}
-                    {Array.isArray(d.faltantes) && d.faltantes.length > 0
-                      ? d.faltantes
+                    {faltantes.length > 0
+                      ? faltantes
                           .map((e) => EPP_LABELS[e] || e)
                           .join(", ")
                       : "Ninguno"}
