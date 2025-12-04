@@ -19,16 +19,18 @@ async function fetchJSON(path, opts = {}) {
   const text = await res.text();
 
   // Validaciones anti-error
-  if (
-    !text ||
-    text.trim() === "" ||
-    text === "undefined" ||
-    text === "null" ||
-    text.startsWith("<")
-  ) {
-    console.warn("⚠ Respuesta vacía o no JSON, retornando null");
-    return null;
-  }
+  // Respuestas inválidas que NO son JSON real
+const invalids = ["undefined", "null", "None"];
+
+if (
+  !text ||
+  text.trim() === "" ||
+  text.startsWith("<") ||            // HTML → error del servidor
+  invalids.includes(text.trim())     // valores no parseables
+) {
+  console.warn("⚠ Respuesta no válida desde API:", text);
+  return null;
+}
 
   try {
     return JSON.parse(text);
