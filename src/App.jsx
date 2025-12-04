@@ -11,7 +11,7 @@ import Timelapse from "./components/Timelapse";
 import ReportesAlertas from "./components/ReportesAlertas";
 import Login from "./components/Login";
 import Usuarios from "./components/Usuarios";
-import Camaras from "./components/Camaras";   // ✅ importaste el nuevo componente
+
 
 /* ---------- Vistas ---------- */
 function Inicio() {
@@ -104,10 +104,7 @@ function App() {
           />
 
           {/* ✅ Nueva ruta protegida para Cámaras */}
-          <Route
-            path="/camaras"
-            element={user ? <Camaras /> : <Navigate to="/login" replace />}
-          />
+          
 
           {/* Solo admin */}
           <Route

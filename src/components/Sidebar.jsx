@@ -21,7 +21,6 @@ export default function Sidebar({ user, onLogout }) {
     { to: "/alertas", label: "Alertas", icon: <FaBell /> },
     { to: "/reportes", label: "Reportes", icon: <FaFileAlt /> },
     { to: "/timelapse", label: "Timelapse", icon: <FaVideo /> },
-    { to: "/camaras", label: "Cámaras", icon: <FaCamera /> },  // ✅ nuevo item
   ];
 
   if (user?.rol === "admin") {
