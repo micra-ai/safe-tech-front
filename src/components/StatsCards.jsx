@@ -27,6 +27,7 @@ const EPP_LABELS = {
 const ALERTS_URL = `${API_URL}/static/alertas_timelapse.json`;
 
 // Calcula métricas a partir del JSON de alertas
+// Calcula métricas a partir del JSON de alertas
 function calcularMetricsDesdeAlertas(alertas) {
   if (!Array.isArray(alertas) || alertas.length === 0) {
     return {
@@ -35,31 +36,44 @@ function calcularMetricsDesdeAlertas(alertas) {
       epp_mas_incumplidos: [],
       ultimas: [],
       imagenes_procesadas: 0,
+      fecha_referencia: null,
     };
   }
 
   const hoyStr = new Date().toISOString().slice(0, 10);
 
-  // 🔴 ANTES
-  // const alertasHoy = alertas.filter(
-  //   (a) => (a.fecha || "").startsWith(hoyStr)
-  // );
-
-  // 🟢 DESPUÉS: usamos timestamp como criterio principal
-  const alertasHoy = alertas.filter((a) => {
+  const getDateFromAlert = (a) => {
     const ts = (a.timestamp || "").slice(0, 10);
     const f = (a.fecha || "").slice(0, 10);
-    return ts === hoyStr || f === hoyStr;
-  });
+    return ts || f || null;
+  };
 
-  const incumplimientos_epp = alertasHoy.length;
-  const imagenes_procesadas = alertasHoy.length;
-  // ... resto igual
+  // 1) Intentar con hoy
+  let fechaRef = hoyStr;
+  let alertasDia = alertas.filter((a) => getDateFromAlert(a) === fechaRef);
 
+  // 2) Si no hay alertas hoy, usar el último día con datos
+  if (alertasDia.length === 0) {
+    const fechas = Array.from(
+      new Set(
+        alertas
+          .map(getDateFromAlert)
+          .filter(Boolean)
+      )
+    ).sort(); // ascendente
+
+    if (fechas.length > 0) {
+      fechaRef = fechas[fechas.length - 1]; // última fecha
+      alertasDia = alertas.filter((a) => getDateFromAlert(a) === fechaRef);
+    }
+  }
+
+  const incumplimientos_epp = alertasDia.length;
+  const imagenes_procesadas = alertasDia.length;
 
   // Contar EPP faltantes
   const contador = {};
-  for (const a of alertasHoy) {
+  for (const a of alertasDia) {
     const falt = Array.isArray(a.faltantes) ? a.faltantes : [];
     for (const f of falt) {
       contador[f] = (contador[f] || 0) + 1;
@@ -72,10 +86,11 @@ function calcularMetricsDesdeAlertas(alertas) {
 
   return {
     incumplimientos_epp,
-    porcentaje_cumplimiento: 100,
+    porcentaje_cumplimiento: 100, // luego lo podemos refinar si quieres
     epp_mas_incumplidos,
-    ultimas: alertasHoy.slice(-5),
+    ultimas: alertasDia.slice(-5),
     imagenes_procesadas,
+    fecha_referencia: fechaRef,
   };
 }
 
