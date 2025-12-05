@@ -26,7 +26,6 @@ function normalizarRutaImagen(rawPath) {
 
   let p = rawPath;
 
-  // Si viene con prefijo de filesystem
   if (p.startsWith("/app/")) {
     p = p.replace("/app", ""); // "/app/static/..." -> "/static/..."
   }
@@ -38,10 +37,18 @@ function normalizarRutaImagen(rawPath) {
   return `${API_URL}${p}`;
 }
 
+// Saca la fecha (YYYY-MM-DD) de una alerta
+function getFechaAlerta(a) {
+  if (a.fecha) return a.fecha;
+  if (a.timestamp) return String(a.timestamp).split("T")[0];
+  return null;
+}
+
 export default function Detecciones() {
   const [alertas, setAlertas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
+  const [ultimaFecha, setUltimaFecha] = useState(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -50,7 +57,7 @@ export default function Detecciones() {
       try {
         setCargando(true);
 
-        // 👇 cache-busting duro: cada request es único
+        // cache-busting para obligar a traer el JSON nuevo
         const res = await fetch(`${ALERTS_URL}?t=${Date.now()}`, {
           cache: "no-store",
         });
@@ -60,21 +67,49 @@ export default function Detecciones() {
         }
 
         const data = await res.json();
-
         if (!Array.isArray(data)) {
           throw new Error("El JSON de alertas no es un array");
         }
 
-        // Ordenar por timestamp descendente y limitar a las últimas 100
-        const ordenadas = [...data].sort((a, b) => {
-          const ta = a.timestamp || "";
-          const tb = b.timestamp || "";
-          // fallback simple: string ISO ordena bien
-          return tb.localeCompare(ta);
+        // 1) Sacar la fecha de cada alerta
+        const conFecha = data
+          .map((a) => ({ ...a, __fecha__: getFechaAlerta(a) }))
+          .filter((a) => !!a.__fecha__);
+
+        if (conFecha.length === 0) {
+          if (!cancelado) {
+            setAlertas([]);
+            setUltimaFecha(null);
+            setError(null);
+          }
+          return;
+        }
+
+        // 2) Ordenar por fecha y timestamp descendente
+        const ordenadas = [...conFecha].sort((a, b) => {
+          if (a.__fecha__ === b.__fecha__) {
+            const ta = a.timestamp || "";
+            const tb = b.timestamp || "";
+            return tb.localeCompare(ta);
+          }
+          return b.__fecha__.localeCompare(a.__fecha__);
         });
 
+        // 3) Tomar la última fecha disponible (la más reciente)
+        const fechaMasReciente = ordenadas[0].__fecha__;
+
+        // 4) Filtrar SOLO las alertas de esa fecha
+        const soloUltimoDia = ordenadas.filter(
+          (a) => a.__fecha__ === fechaMasReciente
+        );
+
         if (!cancelado) {
-          setAlertas(ordenadas.slice(0, 100));
+          setUltimaFecha(fechaMasReciente);
+          setAlertas(
+            soloUltimoDia
+              .slice(0, 100) // últimas 100 del último día
+              .map(({ __fecha__, ...rest }) => rest) // limpiamos campo interno
+          );
           setError(null);
         }
       } catch (err) {
@@ -104,15 +139,21 @@ export default function Detecciones() {
 
   return (
     <div className="bg-white p-4 rounded shadow my-4">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-1">
         <h2 className="text-xl font-bold">🚨 Alertas detectadas</h2>
         <span className="text-xs text-gray-500">
           Actualizando cada 3 segundos
         </span>
       </div>
 
+      {ultimaFecha && (
+        <p className="text-xs text-gray-500 mb-2">
+          Mostrando alertas del día <strong>{ultimaFecha}</strong>
+        </p>
+      )}
+
       {cargando && (
-        <p className="text-gray-500">Cargando detecciones...</p>
+        <p className="text-gray-500 text-sm">Cargando detecciones...</p>
       )}
 
       {error && (
