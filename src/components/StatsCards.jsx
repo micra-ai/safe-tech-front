@@ -27,7 +27,6 @@ const EPP_LABELS = {
 const ALERTS_URL = `${API_URL}/static/alertas_timelapse.json`;
 
 // Calcula métricas a partir del JSON de alertas
-// Calcula métricas a partir del JSON de alertas
 function calcularMetricsDesdeAlertas(alertas) {
   if (!Array.isArray(alertas) || alertas.length === 0) {
     return {
@@ -42,38 +41,54 @@ function calcularMetricsDesdeAlertas(alertas) {
 
   const hoyStr = new Date().toISOString().slice(0, 10);
 
-  const getDateFromAlert = (a) => {
+  const getFecha = (a) => {
     const ts = (a.timestamp || "").slice(0, 10);
     const f = (a.fecha || "").slice(0, 10);
     return ts || f || null;
   };
 
-  // 1) Intentar con hoy
+  // 1) Intentar con HOY
   let fechaRef = hoyStr;
-  let alertasDia = alertas.filter((a) => getDateFromAlert(a) === fechaRef);
+  let registrosDia = alertas.filter((a) => getFecha(a) === fechaRef);
 
-  // 2) Si no hay alertas hoy, usar el último día con datos
-  if (alertasDia.length === 0) {
+  // 2) Si hoy no hay datos, usar el ÚLTIMO día con registros
+  if (registrosDia.length === 0) {
     const fechas = Array.from(
-      new Set(
-        alertas
-          .map(getDateFromAlert)
-          .filter(Boolean)
-      )
+      new Set(alertas.map(getFecha).filter(Boolean))
     ).sort(); // ascendente
 
-    if (fechas.length > 0) {
-      fechaRef = fechas[fechas.length - 1]; // última fecha
-      alertasDia = alertas.filter((a) => getDateFromAlert(a) === fechaRef);
+    if (fechas.length === 0) {
+      return {
+        incumplimientos_epp: 0,
+        porcentaje_cumplimiento: 100,
+        epp_mas_incumplidos: [],
+        ultimas: [],
+        imagenes_procesadas: 0,
+        fecha_referencia: null,
+      };
     }
+
+    fechaRef = fechas[fechas.length - 1]; // último día
+    registrosDia = alertas.filter((a) => getFecha(a) === fechaRef);
   }
 
-  const incumplimientos_epp = alertasDia.length;
-  const imagenes_procesadas = alertasDia.length;
+  const totalDetecciones = registrosDia.length;
 
-  // Contar EPP faltantes
+  // Incumplimientos = detecciones con faltantes
+  const esAlerta = (a) =>
+    Array.isArray(a.faltantes) && a.faltantes.length > 0;
+
+  const totalAlertas = registrosDia.filter(esAlerta).length;
+  const totalCumplimientos = totalDetecciones - totalAlertas;
+
+  const porcentaje_cumplimiento =
+    totalDetecciones === 0
+      ? 100
+      : Math.round((totalCumplimientos / totalDetecciones) * 100);
+
+  // Contar EPP más incumplidos
   const contador = {};
-  for (const a of alertasDia) {
+  for (const a of registrosDia) {
     const falt = Array.isArray(a.faltantes) ? a.faltantes : [];
     for (const f of falt) {
       contador[f] = (contador[f] || 0) + 1;
@@ -85,14 +100,15 @@ function calcularMetricsDesdeAlertas(alertas) {
   );
 
   return {
-    incumplimientos_epp,
-    porcentaje_cumplimiento: 100, // luego lo podemos refinar si quieres
+    incumplimientos_epp: totalAlertas,
+    porcentaje_cumplimiento,
     epp_mas_incumplidos,
-    ultimas: alertasDia.slice(-5),
-    imagenes_procesadas,
+    ultimas: registrosDia.slice(-5),
+    imagenes_procesadas: totalDetecciones,
     fecha_referencia: fechaRef,
   };
 }
+
 
 export default function StatsCards() {
   const [metrics, setMetrics] = useState({});
