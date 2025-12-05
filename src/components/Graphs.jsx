@@ -21,29 +21,42 @@ function calcularTendenciaDesdeAlertas(alertas) {
 
   const porDia = {};
 
+  const getFecha = (a) => {
+    const ts = (a.timestamp || "").slice(0, 10);
+    const f = (a.fecha || "").slice(0, 10);
+    return ts || f || null;
+  };
+
   alertas.forEach((a) => {
-    const fecha = a.fecha || (a.timestamp || "").slice(0, 10);
+    const fecha = getFecha(a);
     if (!fecha) return;
 
     if (!porDia[fecha]) {
-      porDia[fecha] = { alertas: 0 };
+      porDia[fecha] = {
+        total: 0,
+        alertas: 0,
+      };
     }
-    porDia[fecha].alertas += 1;
+
+    porDia[fecha].total += 1;
+
+    const falt = Array.isArray(a.faltantes) ? a.faltantes : [];
+    if (falt.length > 0) {
+      porDia[fecha].alertas += 1;
+    }
   });
 
   const fechasOrdenadas = Object.keys(porDia).sort();
-  const maxAlertas = Math.max(
-    ...fechasOrdenadas.map((f) => porDia[f].alertas),
-    1
-  );
 
   return fechasOrdenadas.map((fecha) => {
+    const total = porDia[fecha].total;
     const alertasDia = porDia[fecha].alertas;
-    const cumplimientos = Math.max(0, maxAlertas - alertasDia);
-    const porcentaje_cumplimiento = Math.max(
-      0,
-      100 - (alertasDia / maxAlertas) * 100
-    );
+    const cumplimientos = Math.max(0, total - alertasDia);
+
+    const porcentaje_cumplimiento =
+      total === 0
+        ? 100
+        : Math.round((cumplimientos / total) * 100);
 
     return {
       fecha,
@@ -53,6 +66,7 @@ function calcularTendenciaDesdeAlertas(alertas) {
     };
   });
 }
+
 
 export default function Graphs() {
   const [trend, setTrend] = useState([]);
