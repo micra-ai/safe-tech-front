@@ -17,7 +17,7 @@ const EPP_LABELS = {
   without_overall: "Sin overol",
 };
 
-// URL del JSON generado por el watcher
+// URL base del JSON generado por el watcher
 const ALERTS_URL = `${API_URL}/static/alertas_timelapse.json`;
 
 // Normaliza la ruta de imagen: "/app/static/..." -> "https://host/static/..."
@@ -48,7 +48,10 @@ export default function Detecciones() {
 
     const cargarAlertas = async () => {
       try {
-        const res = await fetch(ALERTS_URL, {
+        setCargando(true);
+
+        // 👇 cache-busting duro: cada request es único
+        const res = await fetch(`${ALERTS_URL}?t=${Date.now()}`, {
           cache: "no-store",
         });
 
@@ -62,20 +65,26 @@ export default function Detecciones() {
           throw new Error("El JSON de alertas no es un array");
         }
 
-        // Ordenar por timestamp descendente y limitar
-        const ordenadas = [...data].sort(
-          (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-        );
+        // Ordenar por timestamp descendente y limitar a las últimas 100
+        const ordenadas = [...data].sort((a, b) => {
+          const ta = a.timestamp || "";
+          const tb = b.timestamp || "";
+          // fallback simple: string ISO ordena bien
+          return tb.localeCompare(ta);
+        });
 
         if (!cancelado) {
-          setAlertas(ordenadas.slice(0, 100)); // últimas 100 alertas
-          setCargando(false);
+          setAlertas(ordenadas.slice(0, 100));
           setError(null);
         }
       } catch (err) {
         console.error("Error cargando alertas:", err);
         if (!cancelado) {
           setError("No se pudieron cargar las detecciones.");
+          setAlertas([]);
+        }
+      } finally {
+        if (!cancelado) {
           setCargando(false);
         }
       }
@@ -134,7 +143,7 @@ export default function Detecciones() {
 
             return (
               <li
-                key={`${a.timestamp}-${a.canal}-${i}`}
+                key={`${a.timestamp || "sin-ts"}-${a.canal}-${i}`}
                 className={`border rounded-lg shadow-sm p-2 flex items-center gap-4 transition
                   ${tieneWithout ? "bg-red-100 border-red-400" : "hover:bg-gray-50"}
                 `}
@@ -152,7 +161,8 @@ export default function Detecciones() {
 
                 <div>
                   <p className="text-sm text-gray-700">
-                    <strong>🕒 Fecha:</strong> {a.fecha} ({a.timestamp})
+                    <strong>🕒 Fecha:</strong>{" "}
+                    {a.fecha} {a.timestamp && `(${a.timestamp})`}
                   </p>
                   <p className="text-sm text-gray-700">
                     <strong>🎥 Canal:</strong> {a.canal}
