@@ -1,183 +1,195 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import API_URL from "../api";
 
+// Mapeo de las clases YOLO a texto legible
+const EPP_LABELS = {
+  with_helmet: "Con casco",
+  without_helmet: "Sin casco",
+  with_safety_vest: "Con chaleco reflectante",
+  without_safety_vest: "Sin chaleco reflectante",
+  with_gloves: "Con guantes",
+  without_gloves: "Sin guantes",
+  with_glasses: "Con lentes de seguridad",
+  without_glasses: "Sin lentes de seguridad",
+  with_shoes: "Con zapatos de seguridad",
+  without_shoes: "Sin zapatos de seguridad",
+  with_overall: "Con overol",
+  without_overall: "Sin overol",
+};
+
+// URL del JSON generado por el watcher
 const ALERTS_URL = `${API_URL}/static/alertas_timelapse.json`;
 
-// Saca fecha y hora legibles desde la alerta
-function parseAlertDate(alert) {
-  if (alert.timestamp) {
-    const [date, timeRaw] = alert.timestamp.split("T");
-    const time = (timeRaw || "").split(".")[0]; // HH:MM:SS
-    return { date, time };
+// Normaliza la ruta de imagen: "/app/static/..." -> "https://host/static/..."
+function normalizarRutaImagen(rawPath) {
+  if (!rawPath) return null;
+
+  let p = rawPath;
+
+  // Si viene con prefijo de filesystem
+  if (p.startsWith("/app/")) {
+    p = p.replace("/app", ""); // "/app/static/..." -> "/static/..."
   }
-  const date = (alert.fecha || "").slice(0, 10);
-  return { date, time: "" };
+
+  if (!p.startsWith("/")) {
+    p = "/" + p;
+  }
+
+  return `${API_URL}${p}`;
 }
 
-export default function ReportesAlertas() {
-  const [desde, setDesde] = useState("");
-  const [hasta, setHasta] = useState("");
+export default function Detecciones() {
   const [alertas, setAlertas] = useState([]);
-  const [cargando, setCargando] = useState(false);
-  const [error, setError] = useState("");
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Función central para cargar alertas según filtros
-  const generarReporte = async () => {
-    setCargando(true);
-    setError("");
-
-    try {
-      const res = await fetch(ALERTS_URL, { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const data = await res.json();
-      let filtradas = Array.isArray(data) ? data : [];
-
-      // Filtro por fecha (opcional)
-      if (desde) {
-        filtradas = filtradas.filter((a) => {
-          const { date } = parseAlertDate(a);
-          return date >= desde;
-        });
-      }
-
-      if (hasta) {
-        filtradas = filtradas.filter((a) => {
-          const { date } = parseAlertDate(a);
-          return date <= hasta;
-        });
-      }
-
-      // Ordenar por fecha/hora descendente
-      filtradas.sort((a, b) => {
-        const ad = parseAlertDate(a);
-        const bd = parseAlertDate(b);
-        const aKey = `${ad.date}T${ad.time}`;
-        const bKey = `${bd.date}T${bd.time}`;
-        return bKey.localeCompare(aKey);
-      });
-
-      setAlertas(filtradas);
-    } catch (err) {
-      console.error("Error generando reporte:", err);
-      setError("No se pudieron cargar las alertas.");
-      setAlertas([]);
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  // 🔁 Auto-refresh igual que las métricas
   useEffect(() => {
-    // carga inicial
-    generarReporte();
+    let cancelado = false;
 
-    // recarga cada 5 segundos
-    const interval = setInterval(() => {
-      generarReporte();
-    }, 5000);
+    const cargarAlertas = async () => {
+      try {
+        const res = await fetch(ALERTS_URL, {
+          cache: "no-store",
+        });
 
-    return () => clearInterval(interval);
-  }, [desde, hasta]);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        if (!Array.isArray(data)) {
+          throw new Error("El JSON de alertas no es un array");
+        }
+
+        // Ordenar por timestamp descendente y limitar
+        const ordenadas = [...data].sort(
+          (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+        );
+
+        if (!cancelado) {
+          setAlertas(ordenadas.slice(0, 100)); // últimas 100 alertas
+          setCargando(false);
+          setError(null);
+        }
+      } catch (err) {
+        console.error("Error cargando alertas:", err);
+        if (!cancelado) {
+          setError("No se pudieron cargar las detecciones.");
+          setCargando(false);
+        }
+      }
+    };
+
+    // Primera carga
+    cargarAlertas();
+
+    // Polling cada 3 segundos (casi tiempo real)
+    const id = setInterval(cargarAlertas, 3000);
+
+    return () => {
+      cancelado = true;
+      clearInterval(id);
+    };
+  }, []);
 
   return (
-    <div className="bg-white rounded-2xl shadow p-4">
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">
-        <div>
-          <h2 className="text-lg font-semibold">Reportes de Alertas</h2>
-          <p className="text-xs text-gray-500">
-            Filtra por rango de fechas para revisar incumplimientos históricos.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">
-              Desde
-            </label>
-            <input
-              type="date"
-              className="border rounded-lg px-2 py-1 text-sm"
-              value={desde}
-              onChange={(e) => setDesde(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">
-              Hasta
-            </label>
-            <input
-              type="date"
-              className="border rounded-lg px-2 py-1 text-sm"
-              value={hasta}
-              onChange={(e) => setHasta(e.target.value)}
-            />
-          </div>
-
-          <button
-            onClick={generarReporte}
-            className="ml-2 px-3 py-2 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700"
-          >
-            Generar reporte
-          </button>
-        </div>
+    <div className="bg-white p-4 rounded shadow my-4">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">🚨 Alertas detectadas</h2>
+        <span className="text-xs text-gray-500">
+          Actualizando cada 3 segundos
+        </span>
       </div>
 
-      {error && (
-        <p className="text-red-500 text-xs mb-2">{error}</p>
+      {cargando && (
+        <p className="text-gray-500">Cargando detecciones...</p>
       )}
 
-      {cargando && (
-        <p className="text-gray-500 text-xs mb-2">
-          Cargando alertas...
+      {error && (
+        <p className="text-red-600 text-sm mb-2">
+          {error}
         </p>
       )}
 
-      {!cargando && alertas.length === 0 && !error && (
-        <p className="text-gray-400 text-xs">
-          No hay alertas registradas en el rango seleccionado.
+      {!cargando && !error && alertas.length === 0 && (
+        <p className="text-gray-500">
+          No hay alertas registradas todavía.
         </p>
       )}
 
       {alertas.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-gray-100 text-gray-700">
-                <th className="py-2 px-2 text-left">Fecha</th>
-                <th className="py-2 px-2 text-left">Hora</th>
-                <th className="py-2 px-2 text-left">Canal</th>
-                <th className="py-2 px-2 text-left">Faltantes</th>
-                <th className="py-2 px-2 text-left">Detectados</th>
-              </tr>
-            </thead>
-            <tbody>
-              {alertas.map((a, idx) => {
-                const { date, time } = parseAlertDate(a);
-                const faltantes = (a.faltantes || []).join(", ");
-                const detectados = (a.detectados || []).join(", ");
+        <ul className="space-y-4 max-h-[70vh] overflow-y-auto transition-all duration-500">
+          {alertas.map((a, i) => {
+            const detectados = Array.isArray(a.detectados) ? a.detectados : [];
+            const faltantes = Array.isArray(a.faltantes) ? a.faltantes : [];
 
-                return (
-                  <tr
-                    key={idx}
-                    className="border-b border-gray-100 hover:bg-gray-50"
+            const tieneWithout =
+              faltantes.length > 0 ||
+              [...detectados, ...faltantes].some((e) =>
+                String(e).toLowerCase().includes("without")
+              );
+
+            const imgUrl = normalizarRutaImagen(a.image);
+
+            return (
+              <li
+                key={`${a.timestamp}-${a.canal}-${i}`}
+                className={`border rounded-lg shadow-sm p-2 flex items-center gap-4 transition
+                  ${tieneWithout ? "bg-red-100 border-red-400" : "hover:bg-gray-50"}
+                `}
+              >
+                {imgUrl && (
+                  <img
+                    src={imgUrl}
+                    alt="alerta de EPP"
+                    className="w-32 h-20 object-cover rounded"
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                    }}
+                  />
+                )}
+
+                <div>
+                  <p className="text-sm text-gray-700">
+                    <strong>🕒 Fecha:</strong> {a.fecha} ({a.timestamp})
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    <strong>🎥 Canal:</strong> {a.canal}
+                  </p>
+
+                  <p className="text-sm text-gray-700">
+                    <strong>✅ Detectados:</strong>{" "}
+                    {detectados.length > 0
+                      ? detectados
+                          .map((e) => EPP_LABELS[e] || e)
+                          .join(", ")
+                      : "Ninguno"}
+                  </p>
+
+                  <p
+                    className={`text-sm font-semibold ${
+                      tieneWithout ? "text-red-600" : "text-gray-700"
+                    }`}
                   >
-                    <td className="py-1 px-2">{date}</td>
-                    <td className="py-1 px-2">{time}</td>
-                    <td className="py-1 px-2">{a.canal}</td>
-                    <td className="py-1 px-2 text-red-600">
-                      {faltantes}
-                    </td>
-                    <td className="py-1 px-2 text-green-700">
-                      {detectados}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    <strong>⚠️ Faltantes:</strong>{" "}
+                    {faltantes.length > 0
+                      ? faltantes
+                          .map((e) => EPP_LABELS[e] || e)
+                          .join(", ")
+                      : "Ninguno"}
+                  </p>
+
+                  {tieneWithout && (
+                    <p className="text-red-700 font-bold text-sm mt-1">
+                      🚨 ALERTA: Persona sin EPP obligatorio
+                    </p>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );
