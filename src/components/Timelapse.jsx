@@ -34,30 +34,25 @@ export default function Timelapse() {
   const [frameActual, setFrameActual] = useState({});
 
   // Obtener días disponibles por canal
-  // Obtener días disponibles por canal
 useEffect(() => {
   canales.forEach((canal) => {
     fetch(`${API_URL}/timelapse_detecciones/dias?canal=${canal}`)
       .then((res) => res.json())
       .then((data) => {
-        console.log("Días crudos desde backend ->", canal, data);
+        console.log("Días desde backend ->", canal, data);
 
-        // data puede ser:
-        // - array de strings ["2025-12-03", ...]
-        // - array de objetos [{ fecha: "2025-12-03", ...}, ...]
-        const fechasUnicas = Array.from(
-          new Set(
-            (data || []).map((item) =>
-              typeof item === "string" ? item : item.fecha
-            )
-          )
-        );
+        // Ahora el backend ya devuelve ["2025-12-03", "2025-12-05", ...]
+        const fechasOrdenadas = (data || []).sort();
 
-        setFechas((prev) => ({ ...prev, [canal]: fechasUnicas }));
+        setFechas((prev) => ({
+          ...prev,
+          [canal]: fechasOrdenadas,
+        }));
       })
       .catch((err) => console.error(err));
   });
 }, []);
+
 
 
   // Cargar imágenes de la fecha seleccionada
