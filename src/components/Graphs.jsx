@@ -72,20 +72,35 @@ export default function Graphs() {
   const [trend, setTrend] = useState([]);
 
   useEffect(() => {
-    const fetchTrend = async () => {
-      try {
-        const res = await fetch(ALERTS_URL, { cache: "no-store" });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        const serie = calcularTendenciaDesdeAlertas(data);
-        setTrend(serie);
-      } catch (err) {
-        console.error("Error cargando tendencia:", err);
-        setTrend([]);
-      }
-    };
-    fetchTrend();
-  }, []);
+  let isMounted = true;
+
+  const fetchTrend = async () => {
+    try {
+      const res = await fetch(ALERTS_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const serie = calcularTendenciaDesdeAlertas(data);
+
+      if (!isMounted) return;
+      setTrend(serie);
+    } catch (err) {
+      console.error("Error cargando tendencia:", err);
+      if (!isMounted) return;
+      setTrend([]);
+    }
+  };
+
+  // carga inicial
+  fetchTrend();
+
+  // auto-refresh cada 5 segundos
+  const interval = setInterval(fetchTrend, 5000);
+
+  return () => {
+    isMounted = false;
+    clearInterval(interval);
+  };
+}, []);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
